@@ -1,0 +1,3 @@
+/home/nik/tmp/flower.jpg
+/home/nik/tmp/button.jpg
+/home/nik/tmp/horse.jpg
