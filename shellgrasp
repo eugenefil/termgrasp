@@ -1,0 +1,8 @@
+#!/bin/sh
+set -euo pipefail
+
+for task in tasks/*; do
+	printf "\x1b[2J"
+	cat "$task"/task
+	ENV=.sh /bin/sh
+done
