@@ -1,1 +1,1 @@
-cut -d/ -d5 pics.txt
+cut -d/ -f5 pics.txt

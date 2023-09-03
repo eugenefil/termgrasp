@@ -1,3 +1,0 @@
-/home/nik/tmp/screen.jpg
-/home/nik/tmp/table.jpg
-/home/nik/tmp/hand.jpg

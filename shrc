@@ -1,6 +1,6 @@
 #!/bin/sh
 
-[ -n "${SHELLGRASP_CD:+x}" ] && cd "$SHELLGRASP_CD"
+PS1='$ '
 
 get_lastcmd() {
 	local lastcmd
@@ -9,18 +9,11 @@ get_lastcmd() {
 	$(history | tail -1)
 	EOF
 	# if exit was used to quit shell, get penultimate command
-	if [ "$lastcmd" = exit ]; then
+	if [ "$lastcmd" = "exit" ]; then
 		IFS=" " read num lastcmd <<-EOF
 		$(history | tail -2 | head -1)
 		EOF
 	fi
 	echo "$lastcmd" >../lastcmd
 }
-
-if [ -n "${SHELLGRASP_LASTCMD:+x}" ]; then
-	eval "$SHELLGRASP_LASTCMD" >../result
-	exit
-else
-	PS1="$ "
-	trap "get_lastcmd" exit
-fi
+trap "get_lastcmd" EXIT

@@ -1,39 +1,31 @@
 #!/bin/sh
 set -euo pipefail
 
+datadir=$(realpath "$0")
+datadir="${datadir%/*}"
 tmp=$(mktemp -dt shellgrasp.XXXXXX)
-for task in tasks/*; do
-	printf "\x1b[2J\x1b[H" # clear screen, move to origin at (1;1)
+for task in "$datadir"/tasks/*; do
+	printf "\x1b[2J" # clear screen
+	printf "\x1b[H" # move cursor to upper left
 	cat "$task"/task
 	echo
 
-	rm -rf "$tmp"/data
-	unset SHELLGRASP_CD
-	if [ -d "$task"/data-train ]; then
-		cp -a "$task"/data-train "$tmp"/data
-		export SHELLGRASP_CD="$tmp"/data
+	rm -rf "$tmp"/workdir
+	if [ -d "$task"/workdir ]; then
+		cp -a "$task"/workdir "$tmp"
+	else
+		mkdir "$tmp"/workdir
 	fi
 
 	rm -f "$tmp"/lastcmd
-	ENV=.shrc /bin/sh
-	res=0
+	(cd "$tmp"/workdir; ENV="$datadir"/shrc exec /bin/sh)
 
-	rm -rf "$tmp"/data
-	unset SHELLGRASP_LASTCMD
-	if [ -d "$task"/data-test ]; then
-		SHELLGRASP_LASTCMD=$(cat "$tmp"/lastcmd)
-		export SHELLGRASP_LASTCMD
-		cp -a "$task"/data-test "$tmp"/data
-		ENV=.shrc /bin/sh
-		cmp -s "$tmp"/result "$task"/result || res=1
-	fi
-
-	if [ "$res" -gt 0 ]; then
+	if grep -qsFxf "$task"/solution "$tmp"/lastcmd; then
+		echo "ПРАВИЛЬНО"
+	else
 		echo "ОШИБКА"
 		echo "ПРАВИЛЬНЫЙ ОТВЕТ:"
 		cat "$task"/solution
-	else
-		echo "ПРАВИЛЬНО"
 	fi
 	read -p "Нажмите ENTER для продолжения" dummy
 done
