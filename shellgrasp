@@ -1,31 +1,29 @@
 #!/bin/sh
-set -euo pipefail
+set -eu
 
-datadir=$(realpath "$0")
-datadir="${datadir%/*}"
 tmp=$(mktemp -dt shellgrasp.XXXXXX)
-for task in "$datadir"/tasks/*; do
+for task in tasks/*; do
 	printf "\x1b[2J" # clear screen
 	printf "\x1b[H" # move cursor to upper left
 	cat "$task"/task
 	echo
 
-	rm -rf "$tmp"/workdir
+	rm -rf "$tmp"/*
 	if [ -d "$task"/workdir ]; then
 		cp -a "$task"/workdir "$tmp"
 	else
 		mkdir "$tmp"/workdir
 	fi
 
-	rm -f "$tmp"/lastcmd
-	(cd "$tmp"/workdir; ENV="$datadir"/shrc exec /bin/sh)
+	(cd "$tmp"/workdir; HISTFILE="$tmp"/history PS1='$ ' exec /bin/sh) || :
 
-	if grep -qsFxf "$task"/solution "$tmp"/lastcmd; then
+	lastcmd=$(tail -1 "$tmp"/history 2>/dev/null) || :
+	if echo "$lastcmd" | grep -qFxf "$task"/solution; then
 		echo "ПРАВИЛЬНО"
 	else
-		echo "ОШИБКА"
-		echo "ПРАВИЛЬНЫЙ ОТВЕТ:"
+		echo "ОШИБКА! ПРАВИЛЬНЫЙ ОТВЕТ:"
 		cat "$task"/solution
 	fi
-	read -p "Нажмите ENTER для продолжения" dummy
+	echo "Нажмите ENTER для продолжения"
+	read
 done
