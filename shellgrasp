@@ -17,8 +17,12 @@ for task in tasks/*; do
 
 	(cd "$tmp"/workdir; HISTFILE="$tmp"/history PS1='$ ' exec /bin/sh) || :
 
-	lastcmd=$(tail -1 "$tmp"/history 2>/dev/null) || :
-	if echo "$lastcmd" | grep -qFxf "$task"/solution; then
+	# Read last command from shell history - this is user's solution.
+	# Note, history file may be absent if there were no commands.
+	# In this case just ignore open error, solution is empty string.
+	# Remove leading and trailing spaces from solution.
+	lastcmd=$(tail -1 "$tmp"/history 2>/dev/null | sed 's/^ *//; s/ *$//')
+	if echo "$lastcmd" | grep -qExf "$task"/solution.regex; then
 		echo "ПРАВИЛЬНО"
 	else
 		echo "ОШИБКА! ПРАВИЛЬНЫЙ ОТВЕТ:"
