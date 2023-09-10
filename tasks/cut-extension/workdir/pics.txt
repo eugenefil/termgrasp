@@ -1,0 +1,3 @@
+/home/user/tmp/flower.jpeg
+/home/user/tmp/button.png
+/home/user/tmp/ball.gif
