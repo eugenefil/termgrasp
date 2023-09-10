@@ -1,1 +1,1 @@
-cut +-d/ +-f5 +pics.txt
+cut +-d/ +-f5 +pics\.txt
