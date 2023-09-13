@@ -1,33 +1,98 @@
 #!/bin/sh
 set -eu
 
-tmp=$(mktemp -dt shellgrasp.XXXXXX)
-for task in tasks/*; do
+me="${0##*/}"
+
+die() {
+	echo "$me: $1" >&2
+	exit 1
+}
+
+clrscr() {
 	printf "\x1b[2J" # clear screen
 	printf "\x1b[H" # move cursor to upper left
-	cat "$task"/task
+}
+
+do_level() {
+	local lvldir
+
+	lvldir="$1"
+	for taskdir in "$lvldir"/*; do
+		[ -d "$taskdir" ] || continue
+		clrscr
+		cat "$taskdir"/task
+		echo
+
+		rm -rf "$tmp"/*
+		if [ -d "$taskdir"/workdir ]; then
+			cp -a "$taskdir"/workdir "$tmp"
+		else
+			mkdir "$tmp"/workdir
+		fi
+
+		(cd "$tmp"/workdir;
+			HISTFILE="$tmp"/history \
+			PS1='$ ' \
+			exec /bin/sh) || :
+
+		# Read last command from shell history - this is user's
+		# solution. Note, history file may be absent if there
+		# were no commands. In this case just ignore open error,
+		# solution is empty string. Remove leading and trailing
+		# spaces from solution.
+		lastcmd=$(tail -1 "$tmp"/history 2>/dev/null |
+			sed 's/^ *//; s/ *$//')
+		if echo "$lastcmd" | grep -qExf "$taskdir"/solution.regex; then
+			echo "ПРАВИЛЬНО"
+		else
+			echo "ОШИБКА"
+			cat "$taskdir"/solution
+		fi
+		printf "Нажмите ENTER для продолжения"
+		read
+	done
+}
+
+play_level() {
+	clrscr
+	echo "        У Р О В Н И"
+	echo "Открыт  Номер  Название уровня"
+	echo
+	lvlnum=0
+	max_enabled_lvl=0
+	for lvldir in levels/*; do
+		[ -d "$lvldir" ] || continue
+		lvlname="${lvldir##*/}"
+		lvlname="${lvlname#*-}" # remove ordering prefix
+		lvlnum=$((lvlnum + 1))
+		# level is enabled if it's level 1 (always enabled) or
+		# it's in the list of enabled levels in profile dir
+		lvlenable=" "
+		if [ $lvlnum = 1 ] || [ -e "$profiledir/levels/$lvlname" ]; then
+			lvlenable="*"
+			max_enabled_lvl=$lvlnum
+		fi
+		printf "%6s  %5d  %s\n" "$lvlenable" $lvlnum "$lvlname"
+	done
+	[ $max_enabled_lvl -gt 0 ] || die "уровни не найдены"
 	echo
 
-	rm -rf "$tmp"/*
-	if [ -d "$task"/workdir ]; then
-		cp -a "$task"/workdir "$tmp"
+	lvl=1
+	if [ $max_enabled_lvl = 1 ]; then
+		printf "Для начала уровня 1 нажмите ENTER"
+		read
 	else
-		mkdir "$tmp"/workdir
+		printf "Введите номер уровня от 1 до %d: " $max_enabled_lvl
+		read lvl
+		[ "$lvl" -ge 1 ] || return
+		[ "$lvl" -le $max_enabled_lvl ] || return
 	fi
+	lvldir=$(ls -d levels/* | head -n $lvl | tail -1)
+	do_level "$lvldir"
+}
 
-	(cd "$tmp"/workdir; HISTFILE="$tmp"/history PS1='$ ' exec /bin/sh) || :
-
-	# Read last command from shell history - this is user's solution.
-	# Note, history file may be absent if there were no commands.
-	# In this case just ignore open error, solution is empty string.
-	# Remove leading and trailing spaces from solution.
-	lastcmd=$(tail -1 "$tmp"/history 2>/dev/null | sed 's/^ *//; s/ *$//')
-	if echo "$lastcmd" | grep -qExf "$task"/solution.regex; then
-		echo "ПРАВИЛЬНО"
-	else
-		echo "ОШИБКА! ПРАВИЛЬНЫЙ ОТВЕТ:"
-		cat "$task"/solution
-	fi
-	echo "Нажмите ENTER для продолжения"
-	read
+profiledir="$HOME"/.shellgrasp
+tmp=$(mktemp -dt shellgrasp.XXXXXX)
+while true; do
+	play_level
 done
