@@ -62,3 +62,17 @@ Though terminal usage is crucial, it is not mandatory (except deliberately termi
 During the solution of one task terminal session may be entered unlimited number of times. Every time it is entered, it is re-inited, so that any side effects made during previous attempts are reset.
 
 In the solution dialog, shell command history from the last terminal session (if available), must serve as a source of possible solutions to choose from (if applicable) in addition to direct solution entry.
+
+# content
+
+## package manager
+
+Teach distro-specific (ask for distro and/or detect current distro) ways to search, install, remove packages, update the system, view package contents, etc.
+
+On desktop/laptop user's first needs will probably include installing new programs rather than e.g. working with the file system. Especially kids, which will want to play games, draw, etc and may long not use pc for any other purpose. So starting with levels on package management basics may be a good idea.
+
+On the other hand, on mobile (android, ios), knowing how to use package manager may be of less importance. Still, user may be using termgrasp on mobile to learn how to work on desktop, so learning particular package manager may be important.
+
+## git
+
+git may be needed not just for programming. E.g. you have a driver package (say, nvidia drivers) from AUR that must be rebuilt every time you update the system. You need git clone for initial install and then git pull for every update.
