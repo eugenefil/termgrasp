@@ -20,6 +20,28 @@ A topic takes 3 levels of progressing complexity. The hardest tasks of the 1st l
 
 2 topics of 3 levels each are grouped into a unit along with extra levels (3 stories, 1 personalized practice and final review) giving typically 11 levels per unit. Topic levels are intertwined somewhat: t1-easy t1-medium t2-easy t1-hard t2-medium t2-hard. Units are just containers for levels and have no names, numbered sequentially.
 
+# level content
+
+## package manager
+
+Teach distro-specific (ask for distro and/or detect current distro) ways to search, install, remove packages, update the system, view package contents, etc.
+
+On desktop/laptop user's first needs will probably include installing new programs rather than e.g. working with the file system. Especially kids, which will want to play games, draw, etc and may long not use pc for any other purpose. So starting with levels on package management basics may be a good idea.
+
+On the other hand, on mobile (android, ios), knowing how to use package manager may be of less importance. Still, user may be using termgrasp on mobile to learn how to work on desktop, so learning particular package manager may be important.
+
+## git
+
+git may be needed not just for programming. E.g. you have a driver package (say, nvidia drivers) from AUR that must be rebuilt every time you update the system. You need git clone for initial install and then git pull for every update.
+
+# level navigation
+
+Termgrasp, like duolingo, is supposed to be game-like. When you start, all levels except level 1 are locked. So you start from level 1 and work your way through lessons sequentially to unlock level 2, then level 3, etc.
+
+You can try jumping to locked levels ahead of time, but for that to succeed you must pass the test that checks your knowledge of all the levels you're skipping. When the test is passed, all the skipped levels and lessons are marked as passed.
+
+Similar to duolingo, already finished levels may be done again. But duolingo doesn't let you choose which particular lesson to redo. In termgrasp you can freely redo any lesson from those offered by an already finished level.
+
 # task types
 
 The code is read and written. So there must be tasks that test the understanding of existing code (reading) and that create new code to solve a problem (writing). Reading code is harder, b/c apart from syntax/command knowledge there is a need to "decompile" a problem being solved by author, whereas when writing code that problem is known.
@@ -63,16 +85,3 @@ During the solution of one task terminal session may be entered unlimited number
 
 In the solution dialog, shell command history from the last terminal session (if available), must serve as a source of possible solutions to choose from (if applicable) in addition to direct solution entry.
 
-# content
-
-## package manager
-
-Teach distro-specific (ask for distro and/or detect current distro) ways to search, install, remove packages, update the system, view package contents, etc.
-
-On desktop/laptop user's first needs will probably include installing new programs rather than e.g. working with the file system. Especially kids, which will want to play games, draw, etc and may long not use pc for any other purpose. So starting with levels on package management basics may be a good idea.
-
-On the other hand, on mobile (android, ios), knowing how to use package manager may be of less importance. Still, user may be using termgrasp on mobile to learn how to work on desktop, so learning particular package manager may be important.
-
-## git
-
-git may be needed not just for programming. E.g. you have a driver package (say, nvidia drivers) from AUR that must be rebuilt every time you update the system. You need git clone for initial install and then git pull for every update.
