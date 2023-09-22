@@ -40,7 +40,57 @@ Termgrasp, like duolingo, is supposed to be game-like. When you start, all level
 
 You can try jumping to locked levels ahead of time, but for that to succeed you must pass the test that checks your knowledge of all the levels you're skipping. When the test is passed, all the skipped levels and lessons are marked as passed.
 
-Similar to duolingo, already finished levels may be done again. But duolingo doesn't let you choose which particular lesson to redo. In termgrasp you can freely redo any lesson from those offered by an already finished level.
+Similar to duolingo, already passed levels may be done again. When choosing already passed level the last (hardest) lesson is started.
+
+Also see "determining current level" in level updates.
+
+# level updates
+
+Level content is not fixed, it's supposed to be constantly improving. This inevitably leads to updating levels while the user is in the middle of the course, probably doing those same levels that are being updated.
+
+Possible updates are: add level, remove level, edit level, move level (change position in course). Also it's important to what part of the course the update is happening: already passed levels (past levels), current level, not yet passed levels (future levels).
+
+## principles
+
+Following principles should be obeyed whenever possible when updating level content:
+
+- user's progress (levels/lessons passed, xp, achievements, etc) should be kept
+
+- current level should be allowed to finish
+
+## determining current level
+
+Current level is searched as follows, whichever is found first:
+
+- Unfinished level (i.e. with at least one passed lesson). There may be at most one such level. This way unfinished levels are allowed to be finished first before moving on (see principles above).
+
+- The lowest in course, that is not passed. This behavior ensures that new content, even when added/moved to past part of the course, is always addressed by user.
+
+## updates to future levels
+
+Adding, removing or editing future levels may be freely done.
+
+When moving some future level below current level in the course order, i.e. into past levels, this is akin to adding new level to past levels, which see below.
+
+## updates to past levels
+
+When a new level is added to course such that its position is below current level (i.e. among levels already passed), it will become the new current level, but only after current level is allowed to finish (see determining current level).
+
+When passed level is removed, the xp, achievements and other progress (if applicable) from the level being removed are kept, but the level itself disappears from the course.
+
+When a level is passed, the content associated with it is considered grasped by the user. So when some past level is reworked, even cardinally and with adding more lessons, still it's considered passed, progress retained, must not be done again.
+
+When past level is moved into future levels, it keeps its status as already passed and must be skipped over when reached.
+
+## updates to current level
+
+Current level can't be added.
+
+When current level is removed, progress is kept (see principles). The new current level will be the lowest level not passed (see determining current level).
+
+When current level is edited, progress (including lessons already passed) is kept. When lessons are removed and new number of lessons is less than or equal to that already passed, the last lesson must be marked not passed. I.e. current level can't be passed by means of update, that decreased number of lessons.
+
+When current level is moved to future or past levels, its progress is kept and it's continued as usual.
 
 # task types
 

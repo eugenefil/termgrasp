@@ -55,8 +55,10 @@ do_level() {
 
 play_level() {
 	clrscr
-	echo "        У Р О В Н И"
-	echo "Открыт  Номер  Название уровня"
+	echo "       У Р О В Н И"
+	echo "       ==========="
+	echo
+	echo " Номер  Прогресс  Название"
 	echo
 	lvlnum=0
 	max_enabled_lvl=0
