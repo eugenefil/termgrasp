@@ -68,6 +68,18 @@ Current level is searched as follows, whichever is found first:
 
 - The lowest in course, that is not passed. This behavior ensures that new content, even when added/moved to past part of the course, is always addressed by user.
 
+## tracking progress
+
+Since levels may be easily moved and removed, level progress is stored as a list of passed levels and not some index number. A level is represented by its unique name. At most one level may have attached to it the number of lessons passed - this is (unfinished) current level. See determining current level.
+
+This way for each level in course:
+
+- if there's a matching level in progress storage without lessons number attached - level is considered (fully) passed
+
+- if there's a matching level in progress storage with attached lessons number - this is unfinished current level
+
+- if there's no matching level in progress storage - level is considered not passed, i.e. future level
+
 ## updates to future levels
 
 Adding, removing or editing future levels may be freely done.
