@@ -38,7 +38,9 @@ git may be needed not just for programming. E.g. you have a driver package (say,
 
 Termgrasp, like duolingo, is supposed to be game-like. When you start, all levels except level 1 are locked. So you start from level 1 and work your way through lessons sequentially to unlock level 2, then level 3, etc.
 
-You can try jumping to locked levels ahead of time, but for that to succeed you must pass the test that checks your knowledge of all the levels you're skipping. When the test is passed, all the skipped levels and lessons are marked as passed.
+You can try jumping to locked levels ahead of time, but for that to succeed you must pass the test that checks your knowledge of all the levels you're skipping including current. When the test is passed, all the skipped levels and lessons are marked as passed.
+
+Note, an update may possibly add new level between levels already passed (i.e. below current), so you can jump "backward" in course. Still, the scheme applies: to succeed in jumping first prove by passing the test that you've mastered all the intermediate levels (incl current) that the system would lead you through if you were to do it the normal sequential way.
 
 Similar to duolingo, already passed levels may be done again. When choosing already passed level the last (hardest) lesson is started.
 
