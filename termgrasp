@@ -106,8 +106,8 @@ level_menu() {
 	lvlnum=0
 	while IFS= read -r lvldir; do
 		num_lessons=$(find "$lvldir" -mindepth 1 -maxdepth 1 -type d)
+		[ -n "$num_lessons" ] || die "$lvldir не содержит уроков"
 		num_lessons=$(echo "$num_lessons" | wc -l)
-		[ "$num_lessons" -gt 0 ] || die "$lvldir не содержит уроков"
 
 		lvlnum=$((lvlnum + 1))
 		lvl="${lvldir##*/}"
