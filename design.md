@@ -1,18 +1,24 @@
-The goal of termgrasp is to teach working in a terminal including understanding of key unix concepts, usage of common utilities and shell scripting. Terminal is hard, so teaching process must resemble that of Duolingo - slow, "bite-sized" and with a lot of repetition. The idea is to smoothen the learning curve as much as possible, so that you could start with zero knowledge and very gradually come to pretty advanced knowledge and skills without resorting to other sources. Text explanations should be kept to absolute minimum (this is what man pages are for). Instead, like Duolingo, when introducing concepts, commands, etc simple intuitive tasks should be used: fill in the blanks, connect pairs, complete the command, etc. See task types. At the same time, the point of termgrasp is to teach real practical working in the terminal instead of doing knowledge quizzes, so terminal session must be always available (except when it must be deliberately unavailable) in order to work out the solution for a task experimentally. See usage of terminal.
+# introduction
 
-The program should feel familiar to Duolingo users.
+The goal of termgrasp is to teach working in a terminal including understanding of key unix concepts, usage of common utilities and shell scripting. Terminal is hard, so teaching process must resemble that of Duolingo - slow, "bite-sized" and with a lot of repetition. The idea is to smoothen the learning curve as much as possible, so that you could start with zero knowledge and very gradually come to pretty advanced knowledge and skills without resorting to other sources.
+
+Text explanations should be kept to absolute minimum. This is what man pages and other resources are for. Also because kids may be perfectly capable of remembering commands and their parameters and thus solving terminal tasks, but have difficulties with reading texts or figuring out what they're asked for. Instead, like Duolingo, when introducing concepts, commands, etc simple intuitive tasks should be used: fill in the blanks, connect pairs, complete the command, etc. See task types.
+
+At the same time, the point of termgrasp is to teach real practical working in the terminal instead of doing knowledge quizzes, so terminal session must be always available (except when it is unavailable on purpose) in order to work out the solution for a task experimentally. See usage of terminal.
+
+The program should feel more or less familiar to Duolingo users.
 
 # level structure
 
-The unit of interaction with the program is one lesson. It may be short, but it must not be long. The attention span of children is not long. The lesson should be easily consumed in one go without making pauses. Also, making pauses may lead to Android killing a terminal app (where our program runs) to free memory, which results in lost progress. So a lesson of 15-25 min is fine.
+The unit of interaction with the program is a lesson comprised of tasks. Lesson may be short, but it must not be long. The attention span of children is not long. The lesson should be easily consumed in one go without making pauses. Also, making pauses may lead to Android killing a terminal app (where our program runs) to free memory, which results in lost progress. So a lesson of 15-25 min is fine.
 
 A lesson consists of tasks belonging to one topic. One lesson is typically not enough to cover a topic. Also it's probably a good idea that a topic extends over a couple of days, so that a user returns to it after some rest instead of consuming in one go and jumping to the next (although for motivated users it's fine). There must not be many lessons in a topic - it must not feel endless. So 3-7 lessons, like in duolingo, is fine. Those 3-7 lessons form a level. If a topic needs more lessons than that, those lessons form new levels of that same topic. E.g. levels describing sed could be: sed, sed2, sed3, etc. Lessons are named around commands or concepts/activities whichever suits best.
 
-Thus our content hierarchy is level-lesson-task. A number of tasks 15-25 min worth of work form a lesson. 3-7 lessons covering some topic form a level. If a topic is big enough, it has multiple levels as needed to cover it.
+Summing up, our content hierarchy is level-lesson-task. A number of tasks 15-25 min worth of work form a lesson. 3-7 lessons covering some topic form a level. If a topic is big enough, it has multiple levels as needed to cover it.
 
 Like in duolingo, inside one lesson tasks progress from simpler to harder. Also levels of one topic progress from simpler to harder (if appropriate).
 
-## duolingo
+## how duolingo does it
 
 Duolingo does typical lessons of 13-15 tasks. If all tasks are completed without error, 2 extra tasks of higher complexity are done, otherwise failed tasks are repeated. 3-7 lessons form a level. Last lesson of the level is for reviewing the mistakes and/or reinforcing the material with harder tasks. It is shorter and may be skipped.
 
@@ -38,11 +44,11 @@ git may be needed not just for programming. E.g. you have a driver package (say,
 
 Termgrasp, like duolingo, is supposed to be game-like. When you start, all levels except level 1 are locked. So you start from level 1 and work your way through lessons sequentially to unlock level 2, then level 3, etc.
 
-You can try jumping to locked levels ahead of time, but for that to succeed you must pass the test that checks your knowledge of all the levels you're skipping including current. When the test is passed, all the skipped levels and lessons are marked as passed.
+You can try jumping forward to locked levels, but for that to succeed you must pass the test that checks your knowledge of all the levels you're skipping including current. When the test is passed, all the skipped levels and lessons are marked as finished.
 
-Note, an update may possibly add new level between levels already passed (i.e. below current), so you can jump "backward" in course. Still, the scheme applies: to succeed in jumping first prove by passing the test that you've mastered all the intermediate levels (incl current) that the system would lead you through if you were to do it the normal sequential way.
+Note, a course update may possibly add new (locked) level in-between levels already finished (i.e. below current course position), so you could jump "backward" in course. Still, the scheme applies: to succeed in jumping first prove by passing the test that you've mastered all the intermediate levels (incl. current) that the program would lead you through if you were to do it the normal sequential way.
 
-Similar to duolingo, already passed levels may be done again. When choosing already passed level the last (hardest) lesson is started.
+Similar to duolingo, finished levels may be done again. When choosing a finished level the last (hardest) lesson is started.
 
 Also see "determining current level" in level updates.
 
@@ -50,9 +56,9 @@ Also see "determining current level" in level updates.
 
 Level content is not fixed, it's supposed to be constantly improving. This inevitably leads to updating levels while the user is in the middle of the course, probably doing those same levels that are being updated.
 
-Possible updates are: add level, remove level, edit level, move level (change position in course). Also it's important to what part of the course the update is happening: already passed levels (past levels), current level, not yet passed levels (future levels).
+Possible updates are: add level, remove level, edit level, move level (change position in course). Also it's important to what part of the course the update is happening: already finished levels (past levels), unfinished current level, not yet started levels (future levels).
 
-## principles
+## principles of update
 
 Following principles should be obeyed whenever possible when updating level content:
 
@@ -64,21 +70,21 @@ Following principles should be obeyed whenever possible when updating level cont
 
 Current level is searched as follows, whichever is found first:
 
-- Unfinished level (i.e. with at least one passed lesson). There may be at most one such level. This way unfinished levels are allowed to be finished first before moving on (see principles above).
+- Unfinished level (i.e. with at least one finished lesson). There may be at most one such level. This way unfinished level is allowed to be finished first before moving on (see principles above).
 
-- The lowest in course, that is not passed. This behavior ensures that new content, even when added/moved to past part of the course, is always addressed by user.
+- The lowest in course, that is not started (i.e. with no finished lessons). This behavior ensures that new content, even when added/moved to past part of the course, is always addressed by user.
 
 ## tracking progress
 
-Since levels may be easily moved and removed, level progress is stored as a list of passed levels and not some index number. A level is represented by its unique name. At most one level may have attached to it the number of lessons passed - this is (unfinished) current level. See determining current level.
+Since levels may be easily moved and removed, level progress is stored as a list of (un)finished levels and not some index number. A level is represented by its unique name. At most one level may have attached to it the number of lessons finished - this is unfinished current level. See determining current level.
 
-This way for each level in course:
+This way for each level in the course:
 
-- if there's a matching level in progress storage without lessons number attached - level is considered (fully) passed
+- if there's a matching level in progress storage without lessons number attached - level is considered finished
 
 - if there's a matching level in progress storage with attached lessons number - this is unfinished current level
 
-- if there's no matching level in progress storage - level is considered not passed, i.e. future level
+- if there's no matching level in progress storage - level is considered not started, i.e. future level
 
 ## updates to future levels
 
@@ -88,21 +94,21 @@ When moving some future level below current level in the course order, i.e. into
 
 ## updates to past levels
 
-When a new level is added to course such that its position is below current level (i.e. among levels already passed), it will become the new current level, but only after current level is allowed to finish (see determining current level).
+When a new level is added to course such that its position is below current level (i.e. among levels already finished), it will become the new current level, but only after current level is allowed to finish (see determining current level).
 
-When passed level is removed, the xp, achievements and other progress (if applicable) from the level being removed are kept, but the level itself disappears from the course.
+When finished level is removed, the xp, achievements and other progress (if applicable) from the level are kept, but the level itself disappears from the course.
 
-When a level is passed, the content associated with it is considered grasped by the user. So when some past level is reworked, even cardinally and with adding more lessons, still it's considered passed, progress retained, must not be done again.
+When a level is finished, the content associated with it is considered grasped by the user. So when some past level is reworked, even cardinally and with adding more lessons, still it's considered finished, progress retained, must not be done again.
 
-When past level is moved into future levels, it keeps its status as already passed and must be skipped over when reached.
+When past level is moved into future levels, it keeps its finished status and must be skipped over when reached.
 
-## updates to current level
+## updates to unfinished current level
 
 Current level can't be added.
 
-When current level is removed, progress is kept (see principles). The new current level will be the lowest level not passed (see determining current level).
+When unfinished current level is removed, progress is kept (see principles). The new current level will be the lowest level not yet started (see determining current level).
 
-When current level is edited, progress (including lessons already passed) is kept. When lessons are removed and new number of lessons is less than or equal to that already passed, the last lesson must be marked not passed. I.e. current level can't be passed by means of update, that decreased number of lessons.
+When current level is edited, progress (incl. lessons already finished) is kept. When lessons are removed and new number of lessons is less than or equal to that already finished, the last lesson must be marked not finished. I.e. current level can't be finished by means of an update, that decreased number of lessons.
 
 When current level is moved to future or past levels, its progress is kept and it's continued as usual.
 
