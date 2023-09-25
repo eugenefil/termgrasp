@@ -13,12 +13,12 @@ clrscr() {
 	printf "\x1b[H" # move cursor to upper left
 }
 
-play_level() {
-	local lvldir
+do_lesson() {
+	local lesson_dir taskdir lastcmd
 
-	lvldir="$1"
-	for taskdir in "$lvldir"/*; do
-		[ -d "$taskdir" ] || continue
+	lesson_dir="$1"
+	for taskdir in "$lesson_dir"/*; do
+		[ -e "$taskdir" ] || die "$lesson_dir не содержит заданий"
 		clrscr
 		cat "$taskdir"/task
 		echo
@@ -207,8 +207,7 @@ level_menu() {
 			echo "Уровень пока недоступен"
 		fi
 	done
-	echo "$lvldir" "$lesson"
-	exit 0
+	do_lesson "$lvldir/$lesson"
 }
 
 profiledir="$HOME"/.termgrasp
