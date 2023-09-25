@@ -85,6 +85,16 @@ current_level() {
 	echo "$current"
 }
 
+# return num of lessons for a level
+# $1 - level dir
+level_num_lessons() {
+	local num_lessons
+
+	num_lessons=$(find "$1" -mindepth 1 -maxdepth 1 -type d)
+	[ -n "$num_lessons" ] || die "$1 не содержит уроков"
+	echo "$num_lessons" | wc -l
+}
+
 # duplicate a char number of times
 # $1 - number of times, $2 - char
 dup() {
@@ -93,7 +103,7 @@ dup() {
 
 level_menu() {
 	local lvldirs lvldir current lvlnum lvl lvlstat curmark \
-		num_lessons fin_lessons progress
+		num_lessons fin_lessons progress lesson
 
 	clrscr
 	echo "         У Р О В Н И"
@@ -105,11 +115,9 @@ level_menu() {
 	lvldirs=$(level_dirs)
 	current=$(echo "$lvldirs" | current_level)
 	lvlnum=0
+	fin_lessons=0
 	while IFS= read -r lvldir; do
-		num_lessons=$(find "$lvldir" -mindepth 1 -maxdepth 1 -type d)
-		[ -n "$num_lessons" ] || die "$lvldir не содержит уроков"
-		num_lessons=$(echo "$num_lessons" | wc -l)
-
+		num_lessons=$(level_num_lessons "$lvldir")
 		lvlnum=$((lvlnum + 1))
 		lvl="${lvldir##*/}"
 		lvl="${lvl#*-}" # remove ordering prefix
@@ -122,7 +130,7 @@ level_menu() {
 			if [ -e "$lvlstat" ]; then
 				# unfinished - read num of finished lessons
 				IFS= read -r fin_lessons <"$lvlstat"
-				[ "$(wc -l "$lvlstat")" -lt 2 ] || die "в $lvlstat должна быть одна строка"
+				[ "$(wc -l <"$lvlstat")" -lt 2 ] || die "в $lvlstat должна быть одна строка"
 				grep -qx '[1-7]' "$lvlstat" || die "в $lvlstat должно быть число завершённых уроков от 1 до 7"
 				# if due to update total num of lessons
 				# became less than or equal to lessons
@@ -166,6 +174,7 @@ level_menu() {
 			# this only makes sense for current level
 			[ -n "$current" ] || continue
 			lvldir="$current"
+			lesson=$((fin_lessons + 1))
 			break
 		else
 			# level number entered, check it, get level dir
@@ -175,21 +184,30 @@ level_menu() {
 
 			# empty current level means course is done
 			# some finished level is repeated - do it
-			[ -z "$current" ] && break
+			if [ -z "$current" ]; then
+				lesson=$(level_num_lessons "$lvldir")
+				break
+			fi
 
 			# course is not done, current level chosen - do it
-			[ "$lvldir" = "$current" ] && break
+			if [ "$lvldir" = "$current" ]; then
+				lesson=$((fin_lessons + 1))
+				break
+			fi
 
 			# either finished or not started level chosen
 			lvl="${lvldir##*/}"
 			lvl="${lvl#*-}" # remove ordering prefix
 			# level is finished - do it
-			[ -e "$profiledir/levels/$lvl" ] && break
+			if [ -e "$profiledir/levels/$lvl" ]; then
+				lesson=$(level_num_lessons "$lvldir")
+				break
+			fi
 			# level is not started - locked
 			echo "Уровень пока недоступен"
 		fi
 	done
-	echo "$lvldir"
+	echo "$lvldir" "$lesson"
 	exit 0
 }
 
