@@ -162,21 +162,39 @@ level_menu() {
 		IFS=" " read -r lvl || exit 0 # exit on EOF
 		[ "$lvl" = "q" ] && exit 0
 		if [ -z "$lvl" ]; then
+			# ENTER pressed, no level chosen
+			# this only makes sense for current level
 			[ -n "$current" ] || continue
 			lvldir="$current"
+			break
 		else
+			# level number entered, check it, get level dir
 			[ "$lvl" -ge 1 ] 2>/dev/null || continue
 			[ "$lvl" -le $lvlnum ] 2>/dev/null || continue
 			lvldir=$(echo "$lvldirs" | head -n"$lvl" | tail -1)
+
+			# empty current level means course is done
+			# some finished level is repeated - do it
+			[ -z "$current" ] && break
+
+			# course is not done, current level chosen - do it
+			[ "$lvldir" = "$current" ] && break
+
+			# either finished or not started level chosen
+			lvl="${lvldir##*/}"
+			lvl="${lvl#*-}" # remove ordering prefix
+			# level is finished - do it
+			[ -e "$profiledir/levels/$lvl" ] && break
+			# level is not started - locked
+			echo "Уровень пока недоступен"
 		fi
-		break
 	done
 	echo "$lvldir"
 	exit 0
 }
 
-profiledir="$HOME"/.shellgrasp
-tmp=$(mktemp -dt shellgrasp.XXXXXX)
+profiledir="$HOME"/.termgrasp
+tmp=$(mktemp -dt termgrasp.XXXXXX)
 while true; do
 	level_menu
 done
