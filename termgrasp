@@ -61,24 +61,25 @@ level_dirs() {
 	echo "$lvldirs" | sort
 }
 
-# search and return current level
+# search current level and return its dir
 # expects list of course level dirs on stdin
 current_level() {
-	local current lvl
+	local current lvldir lvl
 
 	current=
-	while IFS= read -r lvl; do
-		lvl="${lvl##*/}"
+	while IFS= read -r lvldir; do
+		lvl="${lvldir##*/}"
 		lvl="${lvl#*-}" # remove ordering prefix
 
-		# unfinished level immediately becomes current
+		# unfinished level contains number of finished lessons,
+		# immediately becomes current
 		if [ -s "$profiledir/levels/$lvl" ]; then
-			current="$lvl"
+			current="$lvldir"
 			break
 		fi
 		# otherwise look for first level that is not started
 		if ! [ -e "$profiledir/levels/$lvl" ]; then
-			[ -z "$current" ] && current="$lvl"
+			[ -z "$current" ] && current="$lvldir"
 		fi
 	done
 	echo "$current"
@@ -95,10 +96,10 @@ level_menu() {
 		num_lessons fin_lessons progress
 
 	clrscr
-	echo "       У Р О В Н И"
-	echo "       ==========="
+	echo "         У Р О В Н И"
+	echo "         ==========="
 	echo
-	echo " Номер  Прогресс  Название"
+	echo " Уровень  Прогресс  Название"
 	echo
 
 	lvldirs=$(level_dirs)
@@ -114,7 +115,7 @@ level_menu() {
 		lvl="${lvl#*-}" # remove ordering prefix
 		lvlstat="$profiledir/levels/$lvl"
 		curmark=" "
-		if [ "$lvl" = "$current" ]; then
+		if [ "$lvldir" = "$current" ]; then
 			curmark="*"
 			# current level is either previously unfinished
 			# or not yet started
@@ -146,16 +147,32 @@ level_menu() {
 				progress=$(dup "$num_lessons" "x")
 			fi
 		fi
-		printf "%s%5d  %-8s  %s\n" "$curmark" $lvlnum "$progress" "$lvl"
+		printf "%s%7d  %-8s  %s\n" "$curmark" $lvlnum "$progress" "$lvl"
 	done <<-EOF
 	$lvldirs
 	EOF
 
 	echo
-	echo "Нажмите ENTER, чтобы играть текущий, или"
-	printf "введите номер уровня: "
-	lvlnum=
-	IFS= read -r lvlnum
+	while true; do
+		if [ -n "$current" ]; then
+			printf "Уровень [ENTER - текущий, q - выход]: "
+		else
+			printf "Уровень [q - выход]: "
+		fi
+		IFS=" " read -r lvl || exit 0 # exit on EOF
+		[ "$lvl" = "q" ] && exit 0
+		if [ -z "$lvl" ]; then
+			[ -n "$current" ] || continue
+			lvldir="$current"
+		else
+			[ "$lvl" -ge 1 ] 2>/dev/null || continue
+			[ "$lvl" -le $lvlnum ] 2>/dev/null || continue
+			lvldir=$(echo "$lvldirs" | head -n"$lvl" | tail -1)
+		fi
+		break
+	done
+	echo "$lvldir"
+	exit 0
 }
 
 profiledir="$HOME"/.shellgrasp
