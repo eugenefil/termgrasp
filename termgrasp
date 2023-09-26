@@ -13,8 +13,28 @@ clrscr() {
 	printf "\x1b[H" # move cursor to upper left
 }
 
+term() {
+	rm -rf "$tmp"/*
+	if [ -d "$taskdir"/workdir ]; then
+		cp -a "$taskdir"/workdir "$tmp"
+	else
+		mkdir "$tmp"/workdir
+	fi
+
+	(cd "$tmp"/workdir;
+		HISTFILE="$tmp"/history \
+		PS1='$ ' \
+		exec /bin/sh) || :
+
+	# Note, history file may be absent if there
+	# were no commands. In this case just ignore open error.
+	# Remove leading and trailing spaces from command.
+	solution=$(tail -1 "$tmp"/history 2>/dev/null |
+		sed 's/^ *//; s/ *$//')
+}
+
 do_lesson() {
-	local lesson_dir taskdir lastcmd
+	local lesson_dir taskdir solution
 
 	lesson_dir="$1"
 	for taskdir in "$lesson_dir"/*; do
@@ -23,26 +43,9 @@ do_lesson() {
 		cat "$taskdir"/task
 		echo
 
-		rm -rf "$tmp"/*
-		if [ -d "$taskdir"/workdir ]; then
-			cp -a "$taskdir"/workdir "$tmp"
-		else
-			mkdir "$tmp"/workdir
-		fi
-
-		(cd "$tmp"/workdir;
-			HISTFILE="$tmp"/history \
-			PS1='$ ' \
-			exec /bin/sh) || :
-
-		# Read last command from shell history - this is user's
-		# solution. Note, history file may be absent if there
-		# were no commands. In this case just ignore open error,
-		# solution is empty string. Remove leading and trailing
-		# spaces from solution.
-		lastcmd=$(tail -1 "$tmp"/history 2>/dev/null |
-			sed 's/^ *//; s/ *$//')
-		if echo "$lastcmd" | grep -qExf "$taskdir"/solution.regex; then
+		printf "Ответ: "
+		IFS= read -r solution
+		if echo "$solution" | grep -qExf "$taskdir"/solution.regex; then
 			echo "ПРАВИЛЬНО"
 		else
 			echo "ОШИБКА"
