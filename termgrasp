@@ -90,7 +90,10 @@ do_lesson() {
 				IFS= read -r solution
 				[ "$solution" = "q" ] && return
 				if [ "$solution" = "t" ]; then
+					echo
+					echo "Для выхода введите exit или нажмите Ctrl-D в пустой строке"
 					terminal "$taskdir"
+					echo
 					continue
 				fi
 				break
