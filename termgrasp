@@ -81,10 +81,13 @@ do_lesson() {
 	lesson_dir="$1"
 	for taskdir in "$lesson_dir"/*; do
 		[ -e "$taskdir" ] || die "$lesson_dir не содержит заданий"
+
+		# print static part of task
 		clrscr
 		cat "$taskdir"/task
 		echo
 
+		# print dynamic part of task, do some preprocessing
 		if [ -e "$taskdir"/choices ]; then
 			correct=$(head -1 "$taskdir/choices")
 			choices=$(shuffle <"$taskdir"/choices)
@@ -97,26 +100,21 @@ do_lesson() {
 			$choices
 			EOF
 			echo
+		else
+			echo "Вы можете запустить терминал для поиска ответа"
+			rm -rf "$tmp"/history
+		fi
 
-			while true; do
+		# get input from user
+		while true; do
+			if [ -e "$taskdir"/choices ]; then
 				printf "Номер ответа [q - выход]: "
 				IFS=" " read -r solution || return 0
 				[ "$solution" = "q" ] && return 0
 				[ "$solution" -ge 1 ] 2>/dev/null || continue
 				[ "$solution" -le $num_choices ] 2>/dev/null || continue
-				break
-			done
-			solution=$(echo "$choices" | head -n"$solution" | tail -1)
-			if [ "$solution" = "$correct" ]; then
-				echo "ПРАВИЛЬНО"
+				solution=$(echo "$choices" | head -n"$solution" | tail -1)
 			else
-				echo "ОШИБКА"
-				echo "$correct_choice  $correct"
-			fi
-		else
-			echo "Вы можете запустить терминал для поиска ответа"
-			rm -rf "$tmp"/history
-			while true; do
 				if [ -s "$tmp"/history ]; then
 					printf "Ответ [h - история, t - терминал, q - выход]: "
 				else
@@ -137,8 +135,19 @@ do_lesson() {
 					solution=$(choose_from_history)
 					[ -n "$solution" ] || continue
 				fi	
-				break
-			done
+			fi
+			break
+		done
+
+		# check solution, print result
+		if [ -e "$taskdir"/choices ]; then
+			if [ "$solution" = "$correct" ]; then
+				echo "ПРАВИЛЬНО"
+			else
+				echo "ОШИБКА"
+				echo "$correct_choice  $correct"
+			fi
+		else
 			if echo "$solution" | grep -qExf "$taskdir"/solution.regex; then
 				echo "ПРАВИЛЬНО"
 			else
