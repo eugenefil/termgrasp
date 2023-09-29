@@ -76,7 +76,7 @@ choose_from_history() {
 
 do_lesson() {
 	local lesson_dir taskdir choices choice num_choices solution \
-		correct correct_choice
+		correct correct_choice is_correct
 
 	lesson_dir="$1"
 	for taskdir in "$lesson_dir"/*; do
@@ -139,21 +139,25 @@ do_lesson() {
 			break
 		done
 
-		# check solution, print result
+		# check solution
+		is_correct=
 		if [ -e "$taskdir"/choices ]; then
-			if [ "$solution" = "$correct" ]; then
-				echo "ПРАВИЛЬНО"
-			else
-				echo "ОШИБКА"
-				echo "$correct_choice  $correct"
-			fi
+			[ "$solution" = "$correct" ] && is_correct=1
+			correct="$correct_choice  $correct" # prepend number
 		else
 			if echo "$solution" | grep -qExf "$taskdir"/solution.regex; then
-				echo "ПРАВИЛЬНО"
+				is_correct=1
 			else
-				echo "ОШИБКА"
-				cat "$taskdir"/solution
+				correct=$(cat "$taskdir"/solution)
 			fi
+		fi
+
+		# print result
+		if [ -n "$is_correct" ]; then
+			echo "ПРАВИЛЬНО"
+		else
+			echo "ОШИБКА"
+			echo "$correct"
 		fi
 		printf "Нажмите ENTER для продолжения"
 		read
