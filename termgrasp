@@ -64,8 +64,8 @@ do_lesson() {
 
 			while true; do
 				printf "Номер ответа [q - выход]: "
-				IFS=" " read -r solution || return
-				[ "$solution" = "q" ] && return
+				IFS=" " read -r solution || return 0
+				[ "$solution" = "q" ] && return 0
 				[ "$solution" -ge 1 ] 2>/dev/null || continue
 				[ "$solution" -le $num_choices ] 2>/dev/null || continue
 				break
@@ -86,8 +86,8 @@ do_lesson() {
 				else
 					printf "Ответ [t - терминал, q - выход]: "
 				fi
-				IFS= read -r solution || return
-				[ "$solution" = "q" ] && return
+				IFS= read -r solution || return 0
+				[ "$solution" = "q" ] && return 0
 				if [ "$solution" = "t" ]; then
 					echo
 					echo "Для выхода введите exit или нажмите Ctrl-D в пустой строке"
@@ -246,7 +246,7 @@ level_menu() {
 		else
 			printf "Уровень [q - выход]: "
 		fi
-		IFS=" " read -r lvl || exit 0 # exit on EOF
+		IFS=" " read -r lvl || { echo; exit 0; } # exit on EOF
 		[ "$lvl" = "q" ] && exit 0
 		if [ -z "$lvl" ]; then
 			# ENTER pressed, no level chosen
