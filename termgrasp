@@ -38,6 +38,42 @@ shuffle() {
 	done | sort | cut -d" " -f2-
 }
 
+# In shell to return a string from a function, it must be printed to
+# stdout and then captured. When function has to also do user output,
+# stdout is already occupied for returning a value. These functions let
+# do user output to stderr, which is also connected to a terminal.
+echo2() {
+	echo "$@" >&2
+}
+printf2() {
+	printf "$@" >&2
+}
+
+choose_from_history() {
+	local hist num_hist solution
+
+	hist=$(cat "$tmp"/history)
+	num_hist=$(echo "$hist" | wc -l)
+	echo2
+	echo "$hist" | cat -n | more -e >&2
+	echo2
+	while true; do
+		if [ "$num_hist" -gt 1 ]; then
+			printf2 "Номер команды [q - выход]: "
+		else
+			printf2 "Выбрать? [ENTER - да, q - выход]: "
+		fi
+		IFS=" " read -r solution || { echo2; echo2; return 0; }
+		[ "$solution" = "q" ] && echo2 && return 0
+		[ "$num_hist" -eq 1 ] && [ -z "$solution" ] && solution=1
+		[ "$solution" -ge 1 ] 2>/dev/null || continue
+		[ "$solution" -le "$num_hist" ] 2>/dev/null || continue
+		break
+	done
+	# return chosen command with whitespace stripped from both ends
+	echo "$hist" | head -n"$solution" | tail -1 | sed 's/^ *//; s/ *$//'
+}
+
 do_lesson() {
 	local lesson_dir taskdir choices choice num_choices solution \
 		correct correct_choice
@@ -98,25 +134,8 @@ do_lesson() {
 					continue
 				fi
 				if [ -s "$tmp"/history ] && [ "$solution" = "h" ]; then
-					hist=$(cat "$tmp"/history)		
-					num_hist=$(echo "$hist" | wc -l)
-					echo
-					echo "$hist" | cat -n | more -e
-					echo
-					while true; do
-						if [ "$num_hist" -gt 1 ]; then
-							printf "Номер команды [q - выход]: "
-						else
-							printf "Выбрать? [ENTER - да, q - выход]: "
-						fi
-						IFS=" " read -r solution || { echo; echo; continue 2; }
-						[ "$solution" = "q" ] && echo && continue 2
-						[ "$num_hist" -eq 1 ] && [ -z "$solution" ] && solution=1
-						[ "$solution" -ge 1 ] 2>/dev/null || continue
-						[ "$solution" -le "$num_hist" ] 2>/dev/null || continue
-						break
-					done
-					solution=$(echo "$hist" | head -n"$solution" | tail -1 | sed 's/^ *//; s/ *$//')
+					solution=$(choose_from_history)
+					[ -n "$solution" ] || continue
 				fi	
 				break
 			done
