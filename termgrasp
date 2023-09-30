@@ -105,36 +105,33 @@ do_lesson() {
 			rm -rf "$tmp"/history
 		fi
 
-		# get input from user
+		# get solution from user
 		while true; do
 			if [ -e "$taskdir"/choices ]; then
 				printf "Номер ответа [q - выход]: "
-				IFS=" " read -r solution || return 0
-				[ "$solution" = "q" ] && return 0
+			elif [ -s "$tmp"/history ]; then
+				printf "Ответ [h - история, t - терминал, q - выход]: "
+			else
+				printf "Ответ [t - терминал, q - выход]: "
+			fi
+
+			IFS= read -r solution || return 0
+			[ "$solution" = "q" ] && return 0
+			if [ -e "$taskdir"/choices ]; then
 				[ "$solution" -ge 1 ] 2>/dev/null || continue
 				[ "$solution" -le $num_choices ] 2>/dev/null || continue
 				solution=$(echo "$choices" | head -n"$solution" | tail -1)
-			else
-				if [ -s "$tmp"/history ]; then
-					printf "Ответ [h - история, t - терминал, q - выход]: "
-				else
-					printf "Ответ [t - терминал, q - выход]: "
-				fi
-				IFS= read -r solution || return 0
-				[ "$solution" = "q" ] && return 0
-				if [ "$solution" = "t" ]; then
-					echo
-					echo "Для выхода введите exit или нажмите Ctrl-D в пустой строке"
-					rm -rf "$tmp"/history
-					terminal "$taskdir"
-					echo
-					[ -s "$tmp"/history ] && echo "Вы можете выбрать ответ из истории команд терминала"
-					continue
-				fi
-				if [ -s "$tmp"/history ] && [ "$solution" = "h" ]; then
-					solution=$(choose_from_history)
-					[ -n "$solution" ] || continue
-				fi	
+			elif [ "$solution" = "t" ]; then
+				echo
+				echo "Для выхода введите exit или нажмите Ctrl-D в пустой строке"
+				rm -rf "$tmp"/history
+				terminal "$taskdir"
+				echo
+				[ -s "$tmp"/history ] && echo "Вы можете выбрать ответ из истории команд терминала"
+				continue
+			elif [ -s "$tmp"/history ] && [ "$solution" = "h" ]; then
+				solution=$(choose_from_history)
+				[ -n "$solution" ] || continue
 			fi
 			break
 		done
