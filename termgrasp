@@ -20,6 +20,10 @@ setup() {
 	# But busybox more does not and fails on -e.
 	MORE_OPTS="-e" # posix
 	more --help 2>&1 | grep -q '^ *-e' || MORE_OPTS= # busybox
+
+	# use standard IFS
+	IFS=" 	
+"
 }
 
 terminal() {
@@ -72,7 +76,7 @@ choose_from_history() {
 		else
 			printf2 "Выбрать? [ENTER - да, q - выход]: "
 		fi
-		IFS=" " read -r solution || { echo2; echo2; return 0; }
+		read -r solution || { echo2; echo2; return 0; }
 		[ "$solution" = "q" ] && echo2 && return 0
 		[ "$num_hist" -eq 1 ] && [ -z "$solution" ] && solution=1
 		[ "$solution" -ge 1 ] 2>/dev/null || continue
@@ -124,7 +128,7 @@ do_lesson() {
 				printf "Ответ [t - терминал, q - выход]: "
 			fi
 
-			IFS= read -r solution || return 0
+			read -r solution || return 0
 			[ "$solution" = "q" ] && return 0
 			if [ -e "$taskdir"/choices ]; then
 				[ "$solution" -ge 1 ] 2>/dev/null || continue
@@ -284,7 +288,7 @@ level_menu() {
 		else
 			printf "Уровень [q - выход]: "
 		fi
-		IFS=" " read -r lvl || { echo; exit 0; } # exit on EOF
+		read -r lvl || { echo; exit 0; } # exit on EOF
 		[ "$lvl" = "q" ] && exit 0
 		if [ -z "$lvl" ]; then
 			# ENTER pressed, no level chosen
