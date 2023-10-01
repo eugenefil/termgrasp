@@ -13,6 +13,15 @@ clrscr() {
 	printf "\x1b[H" # move cursor to upper left
 }
 
+setup() {
+	# We don't need "more" util to stop after the last screen, only
+	# between screenfuls. Per posix more _shall_ prompt on eof,
+	# unless -e is given. Util-linux more obeys posix, so needs -e.
+	# But busybox more does not and fails on -e.
+	MORE_OPTS="-e" # posix
+	more --help 2>&1 | grep -q '^ *-e' || MORE_OPTS= # busybox
+}
+
 terminal() {
 	local taskdir
 
@@ -55,7 +64,7 @@ choose_from_history() {
 	hist=$(cat "$tmp"/history)
 	num_hist=$(echo "$hist" | wc -l)
 	echo2
-	echo "$hist" | cat -n | more -e >&2
+	echo "$hist" | cat -n | more $MORE_OPTS >&2
 	echo2
 	while true; do
 		if [ "$num_hist" -gt 1 ]; then
@@ -320,6 +329,7 @@ level_menu() {
 
 profiledir="$HOME"/.termgrasp
 tmp=$(mktemp -dt termgrasp.XXXXXX)
+setup
 while true; do
 	level_menu
 done
