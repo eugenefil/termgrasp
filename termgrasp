@@ -87,13 +87,25 @@ choose_from_history() {
 	echo "$hist" | head -n"$solution" | tail -1 | sed 's/^ *//; s/ *$//'
 }
 
-do_lesson() {
-	local lesson_dir taskdir choices choice num_choices solution \
-		correct correct_choice is_correct
+# return num of lessons for a level
+# $1 - level dir
+level_num_lessons() {
+	local num_lessons
 
-	lesson_dir="$1"
-	for taskdir in "$lesson_dir"/*; do
-		[ -e "$taskdir" ] || die "$lesson_dir не содержит заданий"
+	num_lessons=$(find "$1" -mindepth 1 -maxdepth 1 -type d)
+	[ -n "$num_lessons" ] || die "$1 не содержит уроков"
+	echo "$num_lessons" | wc -l
+}
+
+do_lesson() {
+	local lvldir lesson taskdir choices choice num_choices \
+		solution correct correct_choice is_correct \
+		num_lessons lvlstore newstore
+
+	lvldir="$1"
+	lesson="$2"
+	for taskdir in "$lvldir/$lesson"/*; do
+		[ -e "$taskdir" ] || die "$lvldir/$lesson не содержит заданий"
 
 		# print static part of task
 		clrscr
@@ -172,6 +184,15 @@ do_lesson() {
 		printf "Нажмите ENTER для продолжения"
 		read
 	done
+
+	# lesson finished, save progress
+	num_lessons=$(level_num_lessons "$lvldir")
+	lvlstore=$(level_store "$lvldir")
+	newstore=$(mktemp)
+	# if level is finished, write empty string to level progress
+	# file, otherwise write num of currently finished lessons
+	[ "$lesson" -lt "$num_lessons" ] && echo "$lesson" >"$newstore"
+	mv "$newstore" "$lvlstore"
 }
 
 level_dirs() {
@@ -213,16 +234,6 @@ current_level() {
 		fi
 	done
 	echo "$current"
-}
-
-# return num of lessons for a level
-# $1 - level dir
-level_num_lessons() {
-	local num_lessons
-
-	num_lessons=$(find "$1" -mindepth 1 -maxdepth 1 -type d)
-	[ -n "$num_lessons" ] || die "$1 не содержит уроков"
-	echo "$num_lessons" | wc -l
 }
 
 # duplicate a char number of times
@@ -334,7 +345,7 @@ level_menu() {
 			echo "Уровень пока недоступен"
 		fi
 	done
-	do_lesson "$lvldir/$lesson"
+	do_lesson "$lvldir" "$lesson"
 }
 
 profiledir="$HOME"/.termgrasp
