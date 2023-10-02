@@ -182,24 +182,33 @@ level_dirs() {
 	echo "$lvldirs" | sort
 }
 
+# return path to storage file for level progress
+# $1 - level dir
+level_store() {
+	local lvldir lvlname
+
+	lvldir="$1"
+	lvlname="${lvldir##*/}"
+	lvlname="${lvlname#*-}" # remove ordering prefix
+	echo "$profiledir/levels/$lvlname"
+}
+
 # search current level and return its dir
 # expects list of course level dirs on stdin
 current_level() {
-	local current lvldir lvl
+	local current lvldir lvlstore
 
 	current=
 	while IFS= read -r lvldir; do
-		lvl="${lvldir##*/}"
-		lvl="${lvl#*-}" # remove ordering prefix
-
+		lvlstore=$(level_store "$lvldir")
 		# unfinished level contains number of finished lessons,
 		# immediately becomes current
-		if [ -s "$profiledir/levels/$lvl" ]; then
+		if [ -s "$lvlstore" ]; then
 			current="$lvldir"
 			break
 		fi
 		# otherwise look for first level that is not started
-		if ! [ -e "$profiledir/levels/$lvl" ]; then
+		if ! [ -e "$lvlstore" ]; then
 			[ -z "$current" ] && current="$lvldir"
 		fi
 	done
@@ -223,7 +232,7 @@ dup() {
 }
 
 level_menu() {
-	local lvldirs lvldir current lvlnum lvl lvlstat curmark \
+	local lvldirs lvldir current lvlnum lvl lvlstore curmark \
 		num_lessons fin_lessons progress lesson
 
 	clrscr
@@ -240,19 +249,17 @@ level_menu() {
 	while IFS= read -r lvldir; do
 		num_lessons=$(level_num_lessons "$lvldir")
 		lvlnum=$((lvlnum + 1))
-		lvl="${lvldir##*/}"
-		lvl="${lvl#*-}" # remove ordering prefix
-		lvlstat="$profiledir/levels/$lvl"
+		lvlstore=$(level_store "$lvldir")
 		curmark=" "
 		if [ "$lvldir" = "$current" ]; then
 			curmark="*"
 			# current level is either previously unfinished
 			# or not yet started
-			if [ -e "$lvlstat" ]; then
+			if [ -e "$lvlstore" ]; then
 				# unfinished - read num of finished lessons
-				IFS= read -r fin_lessons <"$lvlstat"
-				[ "$(wc -l <"$lvlstat")" -lt 2 ] || die "в $lvlstat должна быть одна строка"
-				grep -qx '[1-7]' "$lvlstat" || die "в $lvlstat должно быть число завершённых уроков от 1 до 7"
+				IFS= read -r fin_lessons <"$lvlstore"
+				[ "$(wc -l <"$lvlstore")" -lt 2 ] || die "в $lvlstore должна быть одна строка"
+				grep -qx '[1-7]' "$lvlstore" || die "в $lvlstore должно быть число завершённых уроков от 1 до 7"
 				# if due to update total num of lessons
 				# became less than or equal to lessons
 				# already finished, mark last lesson as
@@ -268,7 +275,7 @@ level_menu() {
 		else
 			# non-current level is either already finished
 			# or not yet started
-			if [ -e "$lvlstat" ]; then
+			if [ -e "$lvlstore" ]; then
 				# finished - mark all lessons finished
 				progress=$(dup "$num_lessons" "#")
 			else
@@ -276,7 +283,7 @@ level_menu() {
 				progress=$(dup "$num_lessons" "x")
 			fi
 		fi
-		printf "%s%7d  %-8s  %s\n" "$curmark" $lvlnum "$progress" "$lvl"
+		printf "%s%7d  %-8s  %s\n" "$curmark" $lvlnum "$progress" "${lvlstore##*/}"
 	done <<-EOF
 	$lvldirs
 	EOF
@@ -317,10 +324,9 @@ level_menu() {
 			fi
 
 			# either finished or not started level chosen
-			lvl="${lvldir##*/}"
-			lvl="${lvl#*-}" # remove ordering prefix
+			lvlstore=$(level_store "$lvldir")
 			# level is finished - do it
-			if [ -e "$profiledir/levels/$lvl" ]; then
+			if [ -e "$lvlstore" ]; then
 				lesson=$(level_num_lessons "$lvldir")
 				break
 			fi
