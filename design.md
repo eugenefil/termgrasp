@@ -36,6 +36,12 @@ On desktop/laptop user's first needs will probably include installing new progra
 
 On the other hand, on mobile (android, ios), knowing how to use package manager may be of less importance. Still, user may be using termgrasp on mobile to learn how to work on desktop, so learning particular package manager may be important.
 
+### pacman
+
+First level(s) must introduce only the absolutely crucial stuff needed by Arch beginner. Those are commands to search and install packages (-S, -Ss), remove packages (-Rs), query what's already installed (-Qs), update the whole system (-Suy).
+
+Later levels introduce commands that demand more advanced knowledge: view package info (-Si, -Qi), list package contents (-Ql), find owner package of the file path (-Qo), download package databases (-Sy), install package from tarball (-U).
+
 ## git
 
 git may be needed not just for programming. E.g. you have a driver package (say, nvidia drivers) from AUR that must be rebuilt every time you update the system. You need git clone for initial install and then git pull for every update.
