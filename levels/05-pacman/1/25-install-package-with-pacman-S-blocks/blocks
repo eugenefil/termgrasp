@@ -1,0 +1,6 @@
+pacman
+-S
+-Ss
+minetest
+qt
+-U
