@@ -38,7 +38,7 @@ On the other hand, on mobile (android, ios), knowing how to use package manager 
 
 ### pacman
 
-First level(s) must introduce only the absolutely crucial stuff needed by Arch beginner. Those are commands to search and install packages (-S, -Ss), remove packages (-Rs), query what's already installed (-Qs), update the whole system (-Suy).
+First level(s) shall introduce only the absolutely crucial stuff needed by Arch beginner. Those are commands to search and install packages (-S, -Ss), remove packages (-Rs), query what's already installed (-Qs), update the whole system (-Suy). Also the notion of repository and superuser (sudo).
 
 Later levels introduce commands that demand more advanced knowledge: view package info (-Si, -Qi), list package contents (-Ql), find owner package of the file path (-Qo), download package databases (-Sy), install package from tarball (-U).
 
