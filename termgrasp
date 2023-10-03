@@ -99,7 +99,7 @@ level_num_lessons() {
 
 do_lesson() {
 	local lvldir lesson taskdir choices choice num_choices \
-		solution correct correct_choice is_correct \
+		solution correct correct_choice correct_choice_num \
 		num_lessons lvlstore newstore
 
 	lvldir="$1"
@@ -114,13 +114,13 @@ do_lesson() {
 
 		# print dynamic part of task, do some preprocessing
 		if [ -e "$taskdir"/choices ]; then
-			correct=$(head -1 "$taskdir/choices")
 			choices=$(shuffle <"$taskdir"/choices)
 			[ "$(echo "$choices" | wc -l)" -gt 1 ] || die "$taskdir/choices должен содержать больше одного варианта ответа"
 			num_choices=0
+			correct_choice=$(head -1 "$taskdir/choices")
 			while IFS= read -r choice; do
 				echo "$((++num_choices))  $choice"
-				[ "$choice" = "$correct" ] && correct_choice=$num_choices
+				[ "$choice" = "$correct_choice" ] && correct_choice_num=$num_choices
 			done <<-EOF
 			$choices
 			EOF
@@ -145,7 +145,6 @@ do_lesson() {
 			if [ -e "$taskdir"/choices ]; then
 				[ "$solution" -ge 1 ] 2>/dev/null || continue
 				[ "$solution" -le $num_choices ] 2>/dev/null || continue
-				solution=$(echo "$choices" | head -n"$solution" | tail -1)
 			elif [ "$solution" = "t" ]; then
 				echo
 				echo "Для выхода введите exit или нажмите Ctrl-D в пустой строке"
@@ -162,20 +161,15 @@ do_lesson() {
 		done
 
 		# check solution
-		is_correct=
+		correct=
 		if [ -e "$taskdir"/choices ]; then
-			[ "$solution" = "$correct" ] && is_correct=1
-			correct="$correct_choice  $correct" # prepend number
+			[ "$solution" -eq $correct_choice_num ] || correct="$correct_choice_num  $correct_choice"
 		else
-			if echo "$solution" | grep -qExf "$taskdir"/solution.regex; then
-				is_correct=1
-			else
-				correct=$(cat "$taskdir"/solution)
-			fi
+			echo "$solution" | grep -qExf "$taskdir"/solution.regex || correct=$(cat "$taskdir"/solution)
 		fi
 
 		# print result
-		if [ -n "$is_correct" ]; then
+		if [ -z "$correct" ]; then
 			echo "ПРАВИЛЬНО"
 		else
 			echo "ОШИБКА"
