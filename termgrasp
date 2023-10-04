@@ -13,6 +13,17 @@ clrscr() {
 	printf "\033[H" # move cursor to upper left
 }
 
+urandom() {
+	local n
+
+	n=$(od -An -N2 -tu2 /dev/urandom)
+	echo $n # no quotes - remove leading spaces
+}
+
+random_env() {
+	echo "$RANDOM"
+}
+
 setup() {
 	# We don't need "more" util to stop after the last screen, only
 	# between screenfuls. Per posix more _shall_ prompt on eof,
@@ -24,6 +35,9 @@ setup() {
 	# use standard IFS
 	IFS=" 	
 "
+
+	# if shell does not support $RANDOM, use /dev/urandom
+	[ -n "${RANDOM:-}" ] && RND=random_env || RND=urandom
 }
 
 terminal() {
@@ -44,10 +58,11 @@ terminal() {
 }
 
 shuffle() {
-	local item
+	local item rnd
 
 	while IFS= read -r item; do
-		echo "$RANDOM $item"
+		rnd=$($RND)
+		echo "$rnd $item"
 	done | sort | cut -d" " -f2-
 }
 
