@@ -9,8 +9,8 @@ die() {
 }
 
 clrscr() {
-	printf "\x1b[2J" # clear screen
-	printf "\x1b[H" # move cursor to upper left
+	printf "\033[2J" # clear screen
+	printf "\033[H" # move cursor to upper left
 }
 
 setup() {
