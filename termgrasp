@@ -62,7 +62,7 @@ printf2() {
 	printf "$@" >&2
 }
 
-choose_from_history() {
+solution_from_shell_history() {
 	local hist num_hist solution
 
 	hist=$(cat "$tmp"/history)
@@ -97,9 +97,93 @@ level_num_lessons() {
 	echo "$num_lessons" | wc -l
 }
 
+choices_prepare() {
+	local taskdir choices choice
+
+	taskdir="$1"
+
+	# init global vars used by choices_* functions
+	choices_num=0
+	choices_correct=$(head -1 "$taskdir/choices")
+	choices_correct_idx=0
+
+	choices=$(shuffle <"$taskdir"/choices)
+	[ "$(echo "$choices" | wc -l)" -gt 1 ] || die "$taskdir/choices должен содержать больше одного варианта ответа"
+	while IFS= read -r choice; do
+		echo "$((++choices_num))  $choice"
+		[ "$choice" = "$choices_correct" ] && choices_correct_idx=$choices_num
+	done <<-EOF
+	$choices
+	EOF
+	echo
+}
+
+choices_prompt() {
+	printf "Номер ответа [q - выход]: "
+}
+
+choices_solution() {
+	local choice
+
+	choice="$1"
+	[ "$choice" -ge 1 ] 2>/dev/null || return 0
+	[ "$choice" -le $choices_num ] 2>/dev/null || return 0
+	echo "$choice"
+}
+
+choices_check() {
+	local solution
+
+	solution="$1"
+	[ "$solution" -eq $choices_correct_idx ] && return 0
+	echo "$choices_correct_idx  $choices_correct"
+}
+
+cmdentry_prepare() {
+	echo "Вы можете запустить терминал для поиска ответа"
+	rm -rf "$tmp"/history
+}
+
+cmdentry_prompt() {
+	if [ -s "$tmp"/history ]; then
+		printf "Ответ [h - история, t - терминал, q - выход]: "
+	else
+		printf "Ответ [t - терминал, q - выход]: "
+	fi
+}
+
+cmdentry_solution() {
+	local input taskdir solution
+
+	input="$1"
+	taskdir="$2"
+	if [ "$input" = "t" ]; then
+		echo2
+		echo2 "Для выхода введите exit или нажмите Ctrl-D в пустой строке"
+		rm -rf "$tmp"/history
+		terminal "$taskdir" >&2
+		echo2
+		[ -s "$tmp"/history ] && echo2 "Вы можете выбрать ответ из истории команд терминала"
+		solution= # solution is obtained through history dialog
+	elif [ -s "$tmp"/history ] && [ "$input" = "h" ]; then
+		solution=$(solution_from_shell_history)
+	else
+		solution="$input"
+	fi
+	echo "$solution"
+}
+
+cmdentry_check() {
+	local solution taskdir
+
+	solution="$1"
+	taskdir="$2"
+	echo "$solution" | grep -qExf "$taskdir"/solution.regex && return 0
+	cat "$taskdir"/solution
+}
+
 do_lesson() {
-	local lvldir lesson taskdir choices choice num_choices \
-		solution correct correct_choice correct_choice_num \
+	local lvldir lesson taskdir input solution correct \
 		num_lessons lvlstore newstore
 
 	lvldir="$1"
@@ -112,60 +196,39 @@ do_lesson() {
 		cat "$taskdir"/task
 		echo
 
-		# print dynamic part of task, do some preprocessing
+		# prepare: print dynamic part of task, init vars, etc
 		if [ -e "$taskdir"/choices ]; then
-			choices=$(shuffle <"$taskdir"/choices)
-			[ "$(echo "$choices" | wc -l)" -gt 1 ] || die "$taskdir/choices должен содержать больше одного варианта ответа"
-			num_choices=0
-			correct_choice=$(head -1 "$taskdir/choices")
-			while IFS= read -r choice; do
-				echo "$((++num_choices))  $choice"
-				[ "$choice" = "$correct_choice" ] && correct_choice_num=$num_choices
-			done <<-EOF
-			$choices
-			EOF
-			echo
+			choices_prepare "$taskdir"
 		else
-			echo "Вы можете запустить терминал для поиска ответа"
-			rm -rf "$tmp"/history
+			cmdentry_prepare "$taskdir"
 		fi
 
 		# get solution from user
 		while true; do
+			# print prompt
 			if [ -e "$taskdir"/choices ]; then
-				printf "Номер ответа [q - выход]: "
-			elif [ -s "$tmp"/history ]; then
-				printf "Ответ [h - история, t - терминал, q - выход]: "
+				choices_prompt
 			else
-				printf "Ответ [t - терминал, q - выход]: "
+				cmdentry_prompt
 			fi
 
-			read -r solution || return 0
-			[ "$solution" = "q" ] && return 0
+			# process user input to obtain solution
+			read -r input || return 0
+			[ "$input" = "q" ] && return 0
 			if [ -e "$taskdir"/choices ]; then
-				[ "$solution" -ge 1 ] 2>/dev/null || continue
-				[ "$solution" -le $num_choices ] 2>/dev/null || continue
-			elif [ "$solution" = "t" ]; then
-				echo
-				echo "Для выхода введите exit или нажмите Ctrl-D в пустой строке"
-				rm -rf "$tmp"/history
-				terminal "$taskdir"
-				echo
-				[ -s "$tmp"/history ] && echo "Вы можете выбрать ответ из истории команд терминала"
-				continue
-			elif [ -s "$tmp"/history ] && [ "$solution" = "h" ]; then
-				solution=$(choose_from_history)
-				[ -n "$solution" ] || continue
+				solution=$(choices_solution "$input" "$taskdir")
+			else
+				solution=$(cmdentry_solution "$input" "$taskdir")
 			fi
-			break
+			[ -n "$solution" ] && break
 		done
 
-		# check solution
-		correct=
+		# check solution: correct solution is returned only if
+		# user solution was incorrect
 		if [ -e "$taskdir"/choices ]; then
-			[ "$solution" -eq $correct_choice_num ] || correct="$correct_choice_num  $correct_choice"
+			correct=$(choices_check "$solution" "$taskdir")
 		else
-			echo "$solution" | grep -qExf "$taskdir"/solution.regex || correct=$(cat "$taskdir"/solution)
+			correct=$(cmdentry_check "$solution" "$taskdir")
 		fi
 
 		# print result
