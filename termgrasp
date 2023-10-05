@@ -131,7 +131,8 @@ choices_prepare() {
 	choices=$(shuffle <"$taskdir"/choices)
 	[ "$(echo "$choices" | wc -l)" -gt 1 ] || die "$taskdir/choices должен содержать больше одного варианта ответа"
 	while IFS= read -r choice; do
-		echo "$((++choices_num))  $choice"
+		choices_num=$((choices_num + 1))
+		echo "$choices_num  $choice"
 		[ "$choice" = "$choices_correct" ] && choices_correct_idx=$choices_num
 	done <<-EOF
 	$choices
