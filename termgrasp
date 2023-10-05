@@ -257,7 +257,7 @@ do_lesson() {
 			echo "$correct"
 		fi
 		printf "Нажмите ENTER для продолжения"
-		read
+		read -r input
 	done
 
 	# lesson finished, save progress
