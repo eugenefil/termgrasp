@@ -191,7 +191,7 @@ cmdentry_prompt() {
 }
 
 cmdentry_validate() {
-	: # every entry is valid
+	[ -n "$1" ]
 }
 
 cmdentry_solution() {
