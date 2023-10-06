@@ -118,24 +118,34 @@ level_num_lessons() {
 	echo "$num_lessons" | wc -l
 }
 
-choices_prepare() {
-	local taskdir choices choice
+choices_init() {
+	local taskdir choice
 
 	taskdir="$1"
 
 	# init global vars used by choices_* functions
-	choices_num=0
+	choices_values=$(shuffle <"$taskdir"/choices)
 	choices_correct=$(head -1 "$taskdir/choices")
 	choices_correct_idx=0
-
-	choices=$(shuffle <"$taskdir"/choices)
-	[ "$(echo "$choices" | wc -l)" -gt 1 ] || die "$taskdir/choices должен содержать больше одного варианта ответа"
+	choices_num=0
 	while IFS= read -r choice; do
 		choices_num=$((choices_num + 1))
-		echo "$choices_num  $choice"
 		[ "$choice" = "$choices_correct" ] && choices_correct_idx=$choices_num
 	done <<-EOF
-	$choices
+	$choices_values
+	EOF
+	[ "$choices_num" -gt 1 ] || die "$taskdir/choices должен содержать больше одного варианта ответа"
+}
+
+choices_dynamic() {
+	local i choice
+
+	i=0
+	while IFS= read -r choice; do
+		i=$((i + 1))
+		echo "$i  $choice"
+	done <<-EOF
+	$choices_values
 	EOF
 	echo
 }
@@ -144,22 +154,32 @@ choices_prompt() {
 	printf "Номер ответа [q - выход]: "
 }
 
+choices_validate() {
+	check_range "$1" 1 "$choices_num"
+}
+
 choices_solution() {
-	check_range "$1" 1 $choices_num || return 0
 	echo "$1"
 }
 
 choices_check() {
-	local solution
+	[ "$1" -ne "$choices_correct_idx" ] || echo 1
+}
 
-	solution="$1"
-	[ "$solution" -eq $choices_correct_idx ] && return 0
+choices_correct() {
 	echo "$choices_correct_idx  $choices_correct"
 }
 
-cmdentry_prepare() {
-	echo "Вы можете запустить терминал для поиска ответа"
+cmdentry_init() {
 	rm -rf "$tmp"/history
+}
+
+cmdentry_dynamic() {
+	if [ -s "$tmp"/history ]; then
+		echo "Вы можете выбрать ответ из истории команд терминала"
+	else
+		echo "Вы можете запустить терминал для поиска ответа"
+	fi
 }
 
 cmdentry_prompt() {
@@ -170,38 +190,41 @@ cmdentry_prompt() {
 	fi
 }
 
+cmdentry_validate() {
+	: # every entry is valid
+}
+
 cmdentry_solution() {
-	local input taskdir solution
+	local input taskdir
 
 	input="$1"
 	taskdir="$2"
 	if [ "$input" = "t" ]; then
 		echo2
 		echo2 "Для выхода введите exit или нажмите Ctrl-D в пустой строке"
-		rm -rf "$tmp"/history
 		terminal "$taskdir" >&2
-		echo2
-		[ -s "$tmp"/history ] && echo2 "Вы можете выбрать ответ из истории команд терминала"
-		solution= # solution is obtained through history dialog
+		# no output, solution is obtained through history dialog
 	elif [ -s "$tmp"/history ] && [ "$input" = "h" ]; then
-		solution=$(solution_from_shell_history)
+		solution_from_shell_history
 	else
-		solution="$input"
+		echo "$input"
 	fi
-	echo "$solution"
 }
 
 cmdentry_check() {
-	local solution taskdir
+	local ret
 
-	solution="$1"
-	taskdir="$2"
-	echo "$solution" | grep -qExf "$taskdir"/solution.regex && return 0
-	cat "$taskdir"/solution
+	ret=0
+	echo "$1" | grep -Exf "$2"/solution.regex || ret=$?
+	[ $ret -lt 2 ] || return $ret
+}
+
+cmdentry_correct() {
+	cat "$1"/solution
 }
 
 do_lesson() {
-	local lvldir lesson taskdir input solution correct \
+	local lvldir lesson taskdir tasktype input solution is_correct \
 		num_lessons lvlstore newstore
 
 	lvldir="$1"
@@ -209,55 +232,50 @@ do_lesson() {
 	for taskdir in "$lvldir/$lesson"/*; do
 		[ -e "$taskdir" ] || die "$lvldir/$lesson не содержит заданий"
 
-		# print static part of task
-		clrscr
-		cat "$taskdir"/task
-		echo
-
-		# prepare: print dynamic part of task, init vars, etc
 		if [ -e "$taskdir"/choices ]; then
-			choices_prepare "$taskdir"
+			tasktype=choices
 		else
-			cmdentry_prepare "$taskdir"
+			tasktype=cmdentry
 		fi
 
-		# get solution from user
-		while true; do
-			# print prompt
-			if [ -e "$taskdir"/choices ]; then
-				choices_prompt
-			else
-				cmdentry_prompt
-			fi
+		${tasktype}_init "$taskdir"
 
-			# process user input to obtain solution
-			read -r input || return 0
-			[ "$input" = "q" ] && return 0
-			if [ -e "$taskdir"/choices ]; then
-				solution=$(choices_solution "$input" "$taskdir")
-			else
-				solution=$(cmdentry_solution "$input" "$taskdir")
-			fi
-			[ -n "$solution" ] && break
+		solution=
+		while [ -z "$solution" ]; do
+			# print static part of task
+			clrscr
+			cat "$taskdir"/task
+			echo
+
+			# print dynamic part of task
+			${tasktype}_dynamic
+
+			# get input from user
+			while true; do
+				# print prompt
+				${tasktype}_prompt
+				# read and validate input
+				read -r input || return 0
+				[ "$input" = "q" ] && return 0
+				${tasktype}_validate "$input" && break
+			done
+			
+			# obtain solution from input
+			solution=$(${tasktype}_solution "$input" "$taskdir")
 		done
 
-		# check solution: correct solution is returned only if
-		# user solution was incorrect
-		if [ -e "$taskdir"/choices ]; then
-			correct=$(choices_check "$solution" "$taskdir")
-		else
-			correct=$(cmdentry_check "$solution" "$taskdir")
-		fi
+		# check solution
+		is_correct=$(${tasktype}_check "$solution" "$taskdir")
 
 		# print result
-		if [ -z "$correct" ]; then
+		if [ -n "$is_correct" ]; then
 			echo "ПРАВИЛЬНО"
 		else
 			echo "ОШИБКА"
-			echo "$correct"
+			${tasktype}_correct "$taskdir"
 		fi
 		printf "Нажмите ENTER для продолжения"
-		read -r input
+		read -r input || :
 	done
 
 	# lesson finished, save progress
