@@ -85,7 +85,7 @@ check_range() {
 }
 
 solution_from_shell_history() {
-	local hist num_hist solution
+	local hist num_hist input
 
 	hist=$(cat "$tmp"/history)
 	num_hist=$(echo "$hist" | wc -l)
@@ -98,14 +98,13 @@ solution_from_shell_history() {
 		else
 			printf2 "Выбрать? [ENTER - да, q - выход]: "
 		fi
-		read -r solution || { echo2; echo2; return 0; }
-		[ "$solution" = "q" ] && echo2 && return 0
-		[ "$num_hist" -eq 1 ] && [ -z "$solution" ] && solution=1
-		check_range "$solution" 1 "$num_hist" || continue
-		break
+		read -r input || return 0
+		[ "$input" = "q" ] && return 0
+		[ "$num_hist" -eq 1 ] && [ -z "$input" ] && input=1
+		check_range "$input" 1 "$num_hist" && break
 	done
 	# return chosen command with whitespace stripped from both ends
-	echo "$hist" | head -n"$solution" | tail -1 | sed 's/^ *//; s/ *$//'
+	echo "$hist" | head -n"$input" | tail -1 | sed 's/^ *//; s/ *$//'
 }
 
 # return num of lessons for a level
