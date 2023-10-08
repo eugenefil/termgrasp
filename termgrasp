@@ -237,7 +237,6 @@ cmdblocks_init() {
 
 	# init global vars used by cmdblocks_* functions
 	cmdblocks_avail_blocks=
-	cmdblocks_num_avail=0
 	cmdblocks_chosen_blocks=
 
 	taskdir="$1"
@@ -245,18 +244,11 @@ cmdblocks_init() {
 	i=0
 	while IFS= read -r block; do
 		i=$((i + 1))
-		# Note, blocks are stored along with their original
-		# indices. Blocks are moved between 2 lists: available
-		# blocks (to choose from) and chosen blocks. The
-		# sequence of chosen blocks represents the command.
-		# Indices are used to restore original display
-		# order, when chosen blocks are deleted and moved back
-		# to available blocks.
 		if [ -z "$cmdblocks_avail_blocks" ]; then
-			cmdblocks_avail_blocks="$i $block"
+			cmdblocks_avail_blocks="$i  $block"
 		else
 			cmdblocks_avail_blocks="$cmdblocks_avail_blocks
-$i $block"
+$i  $block"
 		fi
 	done <<-EOF
 	$blocks
@@ -265,10 +257,10 @@ $i $block"
 }
 
 cmdblocks_get_command() {
-	local cmd idx block
+	local cmd i block
 
 	cmd=
-	while read -r idx block; do
+	while read -r i block; do
 		cmd="$cmd $block"
 	done <<-EOF
 	$cmdblocks_chosen_blocks
@@ -279,22 +271,12 @@ cmdblocks_get_command() {
 }
 
 cmdblocks_dynamic() {
-	local i idx block
-
 	echo "Команда: $(cmdblocks_get_command)"
 	echo
-
-	i=0
 	if [ -n "$cmdblocks_avail_blocks" ]; then
-		while read -r idx block; do
-			i=$((i + 1))
-			echo "$i  $block"		
-		done <<-EOF
-		$cmdblocks_avail_blocks
-		EOF
+		echo "$cmdblocks_avail_blocks"
 		echo
 	fi
-	cmdblocks_num_avail=$i # update num of available blocks
 }
 
 cmdblocks_prompt() {
@@ -306,14 +288,21 @@ cmdblocks_prompt() {
 }
 
 cmdblocks_validate() {
-	local input
+	local input i block
 
 	input="$1"
 	if [ -n "$cmdblocks_chosen_blocks" ]; then
 		[ -z "$input" ] && return 0
 		[ "$input" = "d" ] && return 0
 	fi
-	check_range "$input" 1 "$cmdblocks_num_avail"
+
+	[ -n "$cmdblocks_avail_blocks" ] || return 1
+	while read -r i block; do
+		[ "$i" -eq "$input" ] 2>/dev/null && return 0
+	done <<-EOF
+	$cmdblocks_avail_blocks
+	EOF
+	return 1
 }
 
 cmdblocks_delete_last_block() {
@@ -328,27 +317,25 @@ cmdblocks_delete_last_block() {
 	else
 		cmdblocks_avail_blocks="$cmdblocks_avail_blocks
 $last"
-		# restore original display order
+		# restore original block order after appending
 		cmdblocks_avail_blocks=$(echo "$cmdblocks_avail_blocks" | sort -n)
 	fi
 }
 
 cmdblocks_choose_block() {
-	local choice i new_avail_blocks chosen
+	local choice new_avail_blocks i block chosen
 
 	choice="$1"
-	i=0
 	new_avail_blocks=
-	while IFS= read -r block; do
-		i=$((i + 1))
-		if [ $i -eq "$choice" ]; then
-			chosen="$block"
+	while read -r i block; do
+		if [ "$i" -eq "$choice" ]; then
+			chosen="$i  $block"
 		else
 			if [ -z "$new_avail_blocks" ]; then
-				new_avail_blocks="$block"
+				new_avail_blocks="$i  $block"
 			else
 				new_avail_blocks="$new_avail_blocks
-$block"
+$i  $block"
 			fi
 		fi
 	done <<-EOF
