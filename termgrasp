@@ -371,14 +371,15 @@ cmdblocks_solution() {
 }
 
 cmdblocks_check() {
-	local correct
+	local ret
 
-	correct=$(cat "$2"/solution)
-	[ "$1" != "$correct" ] || echo 1
+	ret=0
+	echo "$1" | grep -Fxf "$2"/solution || ret=$?
+	[ $ret -lt 2 ] || return $ret
 }
 
 cmdblocks_correct() {
-	cat "$1"/solution
+	head -1 "$1"/solution
 }
 
 do_lesson() {
