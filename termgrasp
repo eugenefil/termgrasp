@@ -273,10 +273,8 @@ cmdblocks_get_command() {
 cmdblocks_dynamic() {
 	echo "Команда: $(cmdblocks_get_command)"
 	echo
-	if [ -n "$cmdblocks_avail_blocks" ]; then
-		echo "$cmdblocks_avail_blocks"
-		echo
-	fi
+	echo "$cmdblocks_avail_blocks"
+	echo
 }
 
 cmdblocks_prompt() {
@@ -296,8 +294,8 @@ cmdblocks_validate() {
 		[ "$input" = "d" ] && return 0
 	fi
 
-	[ -n "$cmdblocks_avail_blocks" ] || return 1
 	while read -r i block; do
+		[ -z "$block" ] && continue
 		[ "$i" -eq "$input" ] 2>/dev/null && return 0
 	done <<-EOF
 	$cmdblocks_avail_blocks
@@ -306,49 +304,60 @@ cmdblocks_validate() {
 }
 
 cmdblocks_delete_last_block() {
-	local n last
+	local n last new_avail_blocks i block
 
+	# delete last block from chosen blocks
 	n=$(echo "$cmdblocks_chosen_blocks" | wc -l)
 	n=$((n - 1))
 	last=$(echo "$cmdblocks_chosen_blocks" | tail -1)
 	cmdblocks_chosen_blocks=$(echo "$cmdblocks_chosen_blocks" | head -n"$n")
-	if [ -z "$cmdblocks_avail_blocks" ]; then
-		cmdblocks_avail_blocks="$last"
-	else
-		cmdblocks_avail_blocks="$cmdblocks_avail_blocks
-$last"
-		# restore original block order after appending
-		cmdblocks_avail_blocks=$(echo "$cmdblocks_avail_blocks" | sort -n)
-	fi
+
+	# insert deleted block back into available blocks
+	read -r n block <<-EOF
+	$last
+	EOF
+	last="$block"
+	new_avail_blocks=
+	while read -r i block; do
+		[ "$i" -eq "$n" ] && block="$last"
+		if [ -z "$new_avail_blocks" ]; then
+			new_avail_blocks="$i  $block"
+		else
+			new_avail_blocks="$new_avail_blocks
+$i  $block"
+		fi
+	done <<-EOF
+	$cmdblocks_avail_blocks
+	EOF
+	cmdblocks_avail_blocks="$new_avail_blocks"
 }
 
 cmdblocks_choose_block() {
-	local choice new_avail_blocks i block chosen
+	local choice new_avail_blocks i block
 
 	choice="$1"
 	new_avail_blocks=
 	while read -r i block; do
 		if [ "$i" -eq "$choice" ]; then
-			chosen="$i  $block"
-		else
-			if [ -z "$new_avail_blocks" ]; then
-				new_avail_blocks="$i  $block"
+			if [ -z "$cmdblocks_chosen_blocks" ]; then
+				cmdblocks_chosen_blocks="$i  $block"
 			else
-				new_avail_blocks="$new_avail_blocks
+				cmdblocks_chosen_blocks="$cmdblocks_chosen_blocks
 $i  $block"
 			fi
+			block= # clear this block in available blocks
+		fi
+
+		if [ -z "$new_avail_blocks" ]; then
+			new_avail_blocks="$i  $block"
+		else
+			new_avail_blocks="$new_avail_blocks
+$i  $block"
 		fi
 	done <<-EOF
 	$cmdblocks_avail_blocks
 	EOF
-
 	cmdblocks_avail_blocks="$new_avail_blocks"
-	if [ -z "$cmdblocks_chosen_blocks" ]; then
-		cmdblocks_chosen_blocks="$chosen"
-	else
-		cmdblocks_chosen_blocks="$cmdblocks_chosen_blocks
-$chosen"
-	fi
 }
 
 cmdblocks_process() {
