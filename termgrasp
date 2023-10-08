@@ -84,7 +84,7 @@ check_range() {
 	[ "$1" -le "$3" ] 2>/dev/null || return 1
 }
 
-solution_from_shell_history() {
+choose_from_shell_history() {
 	local hist num_hist input
 
 	hist=$(cat "$tmp"/history)
@@ -157,6 +157,10 @@ choices_validate() {
 	check_range "$1" 1 "$choices_num"
 }
 
+choices_process() {
+	:
+}
+
 choices_solution() {
 	echo "$1"
 }
@@ -171,6 +175,9 @@ choices_correct() {
 
 cmdentry_init() {
 	rm -rf "$tmp"/history
+	
+	# init global vars used by cmdentry_* functions
+	cmdentry_command=
 }
 
 cmdentry_dynamic() {
@@ -193,7 +200,7 @@ cmdentry_validate() {
 	[ -n "$1" ]
 }
 
-cmdentry_solution() {
+cmdentry_process() {
 	local input taskdir
 
 	input="$1"
@@ -202,12 +209,15 @@ cmdentry_solution() {
 		echo2
 		echo2 "Для выхода введите exit или нажмите Ctrl-D в пустой строке"
 		terminal "$taskdir" >&2
-		# no output, solution is obtained through history dialog
 	elif [ -s "$tmp"/history ] && [ "$input" = "h" ]; then
-		solution_from_shell_history
+		cmdentry_command=$(choose_from_shell_history)
 	else
-		echo "$input"
+		cmdentry_command="$input"
 	fi
+}
+
+cmdentry_solution() {
+	echo "$cmdentry_command"
 }
 
 cmdentry_check() {
@@ -222,6 +232,168 @@ cmdentry_correct() {
 	cat "$1"/solution
 }
 
+cmdblocks_init() {
+	local taskdir i blocks block
+
+	# init global vars used by cmdblocks_* functions
+	cmdblocks_avail_blocks=
+	cmdblocks_num_avail=0
+	cmdblocks_chosen_blocks=
+
+	taskdir="$1"
+	blocks=$(shuffle <"$taskdir"/blocks)
+	i=0
+	while IFS= read -r block; do
+		i=$((i + 1))
+		# Note, blocks are stored along with their original
+		# indices. Blocks are moved between 2 lists: available
+		# blocks (to choose from) and chosen blocks. The
+		# sequence of chosen blocks represents the command.
+		# Indices are used to restore original display
+		# order, when chosen blocks are deleted and moved back
+		# to available blocks.
+		if [ -z "$cmdblocks_avail_blocks" ]; then
+			cmdblocks_avail_blocks="$i $block"
+		else
+			cmdblocks_avail_blocks="$cmdblocks_avail_blocks
+$i $block"
+		fi
+	done <<-EOF
+	$blocks
+	EOF
+	[ "$i" -gt 1 ] || die "$taskdir/blocks должен содержать больше одного блока"
+}
+
+cmdblocks_get_command() {
+	local cmd idx block
+
+	cmd=
+	while read -r idx block; do
+		cmd="$cmd $block"
+	done <<-EOF
+	$cmdblocks_chosen_blocks
+	EOF
+	cmd="${cmd# }" # strip leading space
+	[ -n "$cmd" ] || cmd="<пусто>"
+	echo "$cmd"
+}
+
+cmdblocks_dynamic() {
+	local i idx block
+
+	echo "Команда: $(cmdblocks_get_command)"
+	echo
+
+	i=0
+	if [ -n "$cmdblocks_avail_blocks" ]; then
+		while read -r idx block; do
+			i=$((i + 1))
+			echo "$i  $block"		
+		done <<-EOF
+		$cmdblocks_avail_blocks
+		EOF
+		echo
+	fi
+	cmdblocks_num_avail=$i # update num of available blocks
+}
+
+cmdblocks_prompt() {
+	if [ -n "$cmdblocks_chosen_blocks" ]; then
+		printf "Номер блока [ENTER - готово, d - удалить, q - выход]: "
+	else
+		printf "Номер блока [q - выход]: "
+	fi
+}
+
+cmdblocks_validate() {
+	local input
+
+	input="$1"
+	if [ -n "$cmdblocks_chosen_blocks" ]; then
+		[ -z "$input" ] && return 0
+		[ "$input" = "d" ] && return 0
+	fi
+	check_range "$input" 1 "$cmdblocks_num_avail"
+}
+
+cmdblocks_delete_last_block() {
+	local n last
+
+	n=$(echo "$cmdblocks_chosen_blocks" | wc -l)
+	n=$((n - 1))
+	last=$(echo "$cmdblocks_chosen_blocks" | tail -1)
+	cmdblocks_chosen_blocks=$(echo "$cmdblocks_chosen_blocks" | head -n"$n")
+	if [ -z "$cmdblocks_avail_blocks" ]; then
+		cmdblocks_avail_blocks="$last"
+	else
+		cmdblocks_avail_blocks="$cmdblocks_avail_blocks
+$last"
+		# restore original display order
+		cmdblocks_avail_blocks=$(echo "$cmdblocks_avail_blocks" | sort -n)
+	fi
+}
+
+cmdblocks_choose_block() {
+	local choice i new_avail_blocks chosen
+
+	choice="$1"
+	i=0
+	new_avail_blocks=
+	while IFS= read -r block; do
+		i=$((i + 1))
+		if [ $i -eq "$choice" ]; then
+			chosen="$block"
+		else
+			if [ -z "$new_avail_blocks" ]; then
+				new_avail_blocks="$block"
+			else
+				new_avail_blocks="$new_avail_blocks
+$block"
+			fi
+		fi
+	done <<-EOF
+	$cmdblocks_avail_blocks
+	EOF
+
+	cmdblocks_avail_blocks="$new_avail_blocks"
+	if [ -z "$cmdblocks_chosen_blocks" ]; then
+		cmdblocks_chosen_blocks="$chosen"
+	else
+		cmdblocks_chosen_blocks="$cmdblocks_chosen_blocks
+$chosen"
+	fi
+}
+
+cmdblocks_process() {
+	local input
+
+	input="$1"
+	if [ -z "$input" ]; then
+		return 0 # command compositing is finished - just exit
+	elif [ "$input" = "d" ]; then
+		cmdblocks_delete_last_block
+	else
+		cmdblocks_choose_block "$input"
+	fi
+}
+
+cmdblocks_solution() {
+	# non-empty input means we're still composing the command
+	[ -z "$1" ] || return 0
+	cmdblocks_get_command
+}
+
+cmdblocks_check() {
+	local correct
+
+	correct=$(cat "$2"/solution)
+	[ "$1" != "$correct" ] || echo 1
+}
+
+cmdblocks_correct() {
+	cat "$1"/solution
+}
+
 do_lesson() {
 	local lvldir lesson taskdir tasktype input solution is_correct \
 		num_lessons lvlstore newstore
@@ -233,6 +405,8 @@ do_lesson() {
 
 		if [ -e "$taskdir"/choices ]; then
 			tasktype=choices
+		elif [ -e "$taskdir"/blocks ]; then
+			tasktype=cmdblocks
 		else
 			tasktype=cmdentry
 		fi
@@ -259,8 +433,13 @@ do_lesson() {
 				${tasktype}_validate "$input" && break
 			done
 			
-			# obtain solution from input
-			solution=$(${tasktype}_solution "$input" "$taskdir")
+			# process input
+			${tasktype}_process "$input" "$taskdir"
+
+			# obtain solution (note, subshell is used, so
+			# var assignments in *_solution func are not
+			# persistent - use *_process above for that)
+			solution=$(${tasktype}_solution "$input")
 		done
 
 		# check solution
