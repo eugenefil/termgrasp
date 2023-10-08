@@ -1,0 +1,7 @@
+pacman
+-S
+firefox
+chromium
+-Su
+firefox-esr
+-R
