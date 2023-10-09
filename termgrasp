@@ -84,6 +84,35 @@ check_range() {
 	[ "$1" -le "$3" ] 2>/dev/null || return 1
 }
 
+prompt_init() {
+	# init global vars used by prompt_* functions
+	prompt_text=
+	prompt_commands=
+	prompt_descriptions=
+}
+
+prompt_set() {
+	prompt_text="$1"
+}
+
+prompt_addcmd() {
+	local cmd long_desc short_desc
+
+	cmd="$1"
+	long_desc="${2-}"
+	short_desc="${3-}"
+	[ -n "$long_desc" ] && prompt_descriptions="$prompt_descriptions
+$cmd - $long_desc"
+	[ -n "$short_desc" ] && cmd="$cmd - $short_desc"
+	prompt_commands="$prompt_commands,$cmd"
+}
+
+prompt_show() {
+	prompt_descriptions="${prompt_descriptions#?}"
+	[ -n "$prompt_descriptions" ] && echo "$prompt_descriptions"
+	printf "%s [%s]: " "$prompt_text" "${prompt_commands#?}"
+}
+
 choose_from_shell_history() {
 	local hist num_hist input
 
@@ -150,7 +179,7 @@ choices_dynamic() {
 }
 
 choices_prompt() {
-	printf "Номер ответа [q - выход]: "
+	prompt_set "Номер ответа"
 }
 
 choices_validate() {
@@ -181,19 +210,13 @@ cmdentry_init() {
 }
 
 cmdentry_dynamic() {
-	if [ -s "$tmp"/history ]; then
-		echo "Вы можете выбрать ответ из истории команд терминала"
-	else
-		echo "Вы можете запустить терминал для поиска ответа"
-	fi
+	:
 }
 
 cmdentry_prompt() {
-	if [ -s "$tmp"/history ]; then
-		printf "Ответ [h - история, t - терминал, q - выход]: "
-	else
-		printf "Ответ [t - терминал, q - выход]: "
-	fi
+	prompt_set "Команда"
+	[ -s "$tmp"/history ] && prompt_addcmd "h" "выбрать решение из истории команд терминала"
+	prompt_addcmd "t" "запустить терминал для поиска решения"
 }
 
 cmdentry_validate() {
@@ -278,10 +301,10 @@ cmdblocks_dynamic() {
 }
 
 cmdblocks_prompt() {
+	prompt_set "Номер блока"
 	if [ -n "$cmdblocks_chosen_blocks" ]; then
-		printf "Номер блока [ENTER - готово, d - удалить, q - выход]: "
-	else
-		printf "Номер блока [q - выход]: "
+		prompt_addcmd "ENTER" "готово"
+		prompt_addcmd "d" "удалить блок"
 	fi
 }
 
@@ -423,7 +446,11 @@ do_lesson() {
 			# get input from user
 			while true; do
 				# print prompt
+				prompt_init
 				${tasktype}_prompt
+				prompt_addcmd "q" "" "выход"
+				prompt_show
+
 				# read and validate input
 				read -r input || return 0
 				[ "$input" = "q" ] && return 0
