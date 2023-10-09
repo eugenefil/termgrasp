@@ -460,6 +460,7 @@ do_lesson() {
 	# if level is finished, write empty string to level progress
 	# file, otherwise write num of currently finished lessons
 	[ "$lesson" -lt "$num_lessons" ] && echo "$lesson" >"$newstore"
+	mkdir -p "${lvlstore%/*}"
 	mv "$newstore" "$lvlstore"
 }
 
