@@ -543,10 +543,10 @@ level_menu() {
 		num_lessons fin_lessons progress lesson
 
 	clrscr
-	echo "         У Р О В Н И"
-	echo "         ==========="
+	echo "       У Р О В Н И"
+	echo "       ==========="
 	echo
-	echo " Уровень  Прогресс  Название"
+	echo " Номер  Прогресс  Название"
 	echo
 
 	lvldirs=$(level_dirs)
@@ -590,7 +590,7 @@ level_menu() {
 				progress=$(dup "$num_lessons" "x")
 			fi
 		fi
-		printf "%s%7d  %-8s  %s\n" "$curmark" $lvlnum "$progress" "${lvlstore##*/}"
+		printf "%s%5d  %-8s  %s\n" "$curmark" $lvlnum "$progress" "${lvlstore##*/}"
 	done <<-EOF
 	$lvldirs
 	EOF
@@ -598,9 +598,9 @@ level_menu() {
 	echo
 	while true; do
 		if [ -n "$current" ]; then
-			printf "Уровень [ENTER - текущий, q - выход]: "
+			printf "Номер уровня [ENTER - текущий, q - выход]: "
 		else
-			printf "Уровень [q - выход]: "
+			printf "Номер уровня [q - выход]: "
 		fi
 		read -r lvl || { echo; exit 0; } # exit on EOF
 		[ "$lvl" = "q" ] && exit 0
