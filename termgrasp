@@ -96,21 +96,19 @@ prompt_set() {
 }
 
 prompt_addcmd() {
-	local cmd long_desc short_desc
+	local cmd desc
 
 	cmd="$1"
-	long_desc="${2-}"
-	short_desc="${3-}"
-	[ -n "$long_desc" ] && prompt_descriptions="$prompt_descriptions
-$cmd - $long_desc"
-	[ -n "$short_desc" ] && cmd="$cmd - $short_desc"
+	desc="$2"
+	prompt_descriptions="$prompt_descriptions
+$cmd - $desc"
 	prompt_commands="$prompt_commands,$cmd"
 }
 
 prompt_show() {
-	prompt_descriptions="${prompt_descriptions#?}"
-	[ -n "$prompt_descriptions" ] && echo "$prompt_descriptions"
-	printf "%s [%s]: " "$prompt_text" "${prompt_commands#?}"
+	prompt_addcmd "q" "выйти"
+	echo2 "${prompt_descriptions#?}"
+	printf2 "%s или %s: " "$prompt_text" "${prompt_commands#?}"
 }
 
 choose_from_shell_history() {
@@ -122,14 +120,11 @@ choose_from_shell_history() {
 	echo "$hist" | cat -n | more $MORE_OPTS >&2
 	echo2
 	while true; do
-		if [ "$num_hist" -gt 1 ]; then
-			printf2 "Номер команды [q - выход]: "
-		else
-			printf2 "Выбрать? [ENTER - да, q - выход]: "
-		fi
+		prompt_init
+		prompt_set "Номер команды"
+		prompt_show
 		read -r input || return 0
 		[ "$input" = "q" ] && return 0
-		[ "$num_hist" -eq 1 ] && [ -z "$input" ] && input=1
 		check_range "$input" 1 "$num_hist" && break
 	done
 	# return chosen command with whitespace stripped from both ends
@@ -448,7 +443,6 @@ do_lesson() {
 				# print prompt
 				prompt_init
 				${tasktype}_prompt
-				prompt_addcmd "q" "" "выход"
 				prompt_show
 
 				# read and validate input
@@ -597,11 +591,10 @@ level_menu() {
 
 	echo
 	while true; do
-		if [ -n "$current" ]; then
-			printf "Номер уровня [ENTER - текущий, q - выход]: "
-		else
-			printf "Номер уровня [q - выход]: "
-		fi
+		prompt_init
+		prompt_set "Номер уровня"
+		[ -n "$current" ] && prompt_addcmd "ENTER" "играть текущий уровень"
+		prompt_show
 		read -r lvl || { echo; exit 0; } # exit on EOF
 		[ "$lvl" = "q" ] && exit 0
 		if [ -z "$lvl" ]; then
