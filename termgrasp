@@ -89,6 +89,8 @@ prompt_init() {
 	prompt_text=
 	prompt_commands=
 	prompt_descriptions=
+	prompt_input=
+	prompt_quit=
 }
 
 prompt_set() {
@@ -102,21 +104,81 @@ prompt_addcmd() {
 	desc="$2"
 	prompt_descriptions="$prompt_descriptions
 $cmd - $desc"
-	prompt_commands="$prompt_commands,$cmd"
+	prompt_commands="${prompt_commands}$cmd,"
 }
 
-prompt_showhelp() {
+prompt_read() {
+	local validate_fn cmds cmd
+
+	validate_fn="$1"
+	shift 1
+
+	prompt_addcmd "q" "выйти"
 	echo2 "${prompt_descriptions#?}"
+	while true; do
+		printf2 "%s или %s: " "$prompt_text" "${prompt_commands%?}"
+		if ! read -r prompt_input; then
+			# EOF
+			echo2 # print missing newline
+			prompt_quit=1
+			break
+		fi
+
+		# finish if command was entered
+		cmds="$prompt_commands"
+		while [ -n "$cmds" ]; do
+			cmd="${cmds%%,*}"
+			if [ "$cmd" = "ENTER" ]; then
+				[ -z "$prompt_input" ] && break 2
+			elif [ "$cmd" = "$prompt_input" ]; then
+				[ "$cmd" = "q" ] && prompt_quit=1
+				break 2
+			fi
+			cmds="${cmds#*,}"
+		done
+
+		# validate input using supplied validate func and args
+		"$validate_fn" "$prompt_input" "$@" && break
+	done
 }
 
-prompt_showprompt() {
-	printf2 "%s или %s: " "$prompt_text" "${prompt_commands#?}"
+# from a list of lines return line specified by 1-based index
+# this function is for internal use, params must be safe
+# $1 - lines, $2 - index
+getline() {
+	local lines idx i line
+
+	lines="$1"
+	idx="$2"
+	[ -n "$lines" ] || die "list of lines is empty"
+
+	i=0
+	while IFS= read -r line; do
+		i=$((i + 1))
+		if [ $i -eq "$idx" ]; then
+			echo "$line"
+			return 0
+		fi
+	done <<-EOF
+	$lines
+	EOF
+	die "list index out of range"
+}
+
+strip_space() {
+	local s
+
+	s="$1"
+	while [ "${s#[ 	]}" != "$s" ]; do s="${s#[ 	]}"; done
+	while [ "${s%[ 	]}" != "$s" ]; do s="${s%[ 	]}"; done
+	echo "$s"
 }
 
 choose_from_shell_history() {
-	local hist num_hist input
+	local hist num_hist
 
 	hist=$(cat "$tmp"/history)
+	[ -n "$hist" ] || return 0 # should not happen normally
 	num_hist=$(echo "$hist" | wc -l)
 	echo2
 	echo "$hist" | cat -n | more $MORE_OPTS >&2
@@ -124,16 +186,10 @@ choose_from_shell_history() {
 
 	prompt_init
 	prompt_set "Номер команды"
-	prompt_addcmd "q" "выйти"
-	prompt_showhelp
-	while true; do
-		prompt_showprompt
-		read -r input || return 0
-		[ "$input" = "q" ] && return 0
-		check_range "$input" 1 "$num_hist" && break
-	done
-	# return chosen command with whitespace stripped from both ends
-	echo "$hist" | head -n"$input" | tail -1 | sed 's/^ *//; s/ *$//'
+	prompt_read check_range 1 "$num_hist"
+	[ -n "$prompt_quit" ] && return 0
+	hist=$(getline "$hist" "$prompt_input")
+	strip_space "$hist"
 }
 
 # return num of lessons for a level
@@ -457,22 +513,16 @@ do_lesson() {
 			# get input from user
 			prompt_init
 			${tasktype}_prompt
-			prompt_addcmd "q" "выйти"
-			prompt_showhelp
-			while true; do
-				prompt_showprompt
-				read -r input || return 0
-				[ "$input" = "q" ] && return 0
-				${tasktype}_validate "$input" && break
-			done
+			prompt_read ${tasktype}_validate
+			[ -n "$prompt_quit" ] && return 0
 			
 			# process input
-			${tasktype}_process "$input" "$taskdir"
+			${tasktype}_process "$prompt_input" "$taskdir"
 
 			# obtain solution (note, subshell is used, so
 			# var assignments in *_solution func are not
 			# persistent - use *_process above for that)
-			solution=$(${tasktype}_solution "$input")
+			solution=$(${tasktype}_solution "$prompt_input")
 		done
 
 		# check solution
@@ -536,6 +586,25 @@ dup() {
 	printf "%*s" "$1" "" | tr " " "$2"
 }
 
+level_validate() {
+	local input num_levels lvldirs current \
+		i lvldir lvlstore
+
+	input="$1"
+	num_levels="$2"
+	lvldirs="$3"
+	current="$4"
+	check_range "$input" 1 "$num_levels" || return 1
+
+	# check level is not locked
+	lvldir=$(getline "$lvldirs" "$input")
+	[ "$lvldir" = "$current" ] && return 0
+	lvlstore=$(level_store "$lvldir")
+	[ -e "$lvlstore" ] && return 0
+	echo "Уровень пока недоступен"
+	return 1
+}
+
 level_menu() {
 	local lvldirs lvldir current lvlnum lvl lvlstore curmark \
 		num_lessons fin_lessons progress lesson
@@ -597,24 +666,14 @@ level_menu() {
 	prompt_init
 	prompt_set "Номер уровня"
 	[ -n "$current" ] && prompt_addcmd "ENTER" "играть текущий уровень"
-	prompt_addcmd "q" "выйти"
-	prompt_showhelp
-	while true; do
-		prompt_showprompt
-		read -r lvl || { echo; exit 0; } # exit on EOF
-		[ "$lvl" = "q" ] && exit 0
-		[ -n "$current" ] && [ -z "$lvl" ] && break
-		check_range "$lvl" 1 $lvlnum || continue
+	prompt_read level_validate "$lvlnum" "$lvldirs" "$current"
+	[ -n "$prompt_quit" ] && exit 0
 
-		# check level is not locked
-		lvldir=$(echo "$lvldirs" | head -n"$lvl" | tail -1)
-		[ "$lvldir" = "$current" ] && break
-		lvlstore=$(level_store "$lvldir")
-		[ -e "$lvlstore" ] && break
-		echo "Уровень пока недоступен"
-	done
-
-	[ -z "$lvl" ] && lvldir="$current"
+	if [ -z "$prompt_input" ]; then
+		lvldir="$current"
+	else
+		lvldir=$(getline "$lvldirs" "$prompt_input")
+	fi
 	if [ "$lvldir" = "$current" ]; then
 		lesson=$((fin_lessons + 1))
 	else
