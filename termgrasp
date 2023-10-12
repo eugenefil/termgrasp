@@ -128,7 +128,7 @@ prompt_read() {
 		cmds="$prompt_commands"
 		while [ -n "$cmds" ]; do
 			cmd="${cmds%%,*}"
-			if [ "$cmd" = "ENTER" ]; then
+			if [ "$cmd" = "↵" ]; then
 				[ -z "$prompt_input" ] && break 2
 			elif [ "$cmd" = "$prompt_input" ]; then
 				[ "$cmd" = "q" ] && prompt_quit=1
@@ -370,7 +370,7 @@ cmdblocks_dynamic() {
 cmdblocks_prompt() {
 	prompt_set "Номер блока"
 	if [ -n "$cmdblocks_chosen_blocks" ]; then
-		prompt_addcmd "ENTER" "готово"
+		prompt_addcmd "↵" "готово"
 		prompt_addcmd "d" "удалить блок"
 	fi
 }
@@ -535,7 +535,7 @@ do_lesson() {
 			echo "ОШИБКА"
 			${tasktype}_correct "$taskdir"
 		fi
-		printf "Нажмите ENTER для продолжения"
+		printf "Нажмите ↵ для продолжения"
 		read -r input || :
 	done
 
@@ -665,7 +665,7 @@ level_menu() {
 
 	prompt_init
 	prompt_set "Номер уровня"
-	[ -n "$current" ] && prompt_addcmd "ENTER" "играть текущий уровень"
+	[ -n "$current" ] && prompt_addcmd "↵" "играть текущий уровень"
 	prompt_read level_validate "$lvlnum" "$lvldirs" "$current"
 	[ -n "$prompt_quit" ] && exit 0
 
