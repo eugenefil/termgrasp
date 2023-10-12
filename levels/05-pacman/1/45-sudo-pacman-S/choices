@@ -1,0 +1,3 @@
+sudo pacman -S nano
+pacman -S nano
+pacman -R nano
