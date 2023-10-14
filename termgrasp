@@ -103,20 +103,26 @@ prompt_addcmd() {
 	cmd="$1"
 	desc="$2"
 	prompt_descriptions="$prompt_descriptions
-$cmd - $desc"
+$cmd  $desc"
 	prompt_commands="${prompt_commands}$cmd,"
 }
 
 prompt_read() {
 	local validate_fn cmds cmd
 
-	validate_fn="$1"
-	shift 1
+	validate_fn="${1-}"
+	[ -n "$validate_fn" ] && shift
 
 	prompt_addcmd "q" "выйти"
 	echo2 "${prompt_descriptions#?}"
+	echo2
 	while true; do
-		printf2 "%s или %s: " "$prompt_text" "${prompt_commands%?}"
+		if [ -n "$validate_fn" ]; then
+			printf2 "%s или %s: " "$prompt_text" "${prompt_commands%?}"
+		else
+			printf2 "%s: " "Команда"
+		fi
+
 		if ! read -r prompt_input; then
 			# EOF
 			echo2 # print missing newline
@@ -138,7 +144,9 @@ prompt_read() {
 		done
 
 		# validate input using supplied validate func and args
-		"$validate_fn" "$prompt_input" "$@" && break
+		if [ -n "$validate_fn" ]; then
+			"$validate_fn" "$prompt_input" "$@" && break
+		fi
 	done
 }
 
@@ -667,7 +675,7 @@ level_menu() {
 	prompt_set "Номер уровня"
 	[ -n "$current" ] && prompt_addcmd "↵" "играть текущий уровень"
 	prompt_read level_validate "$lvlnum" "$lvldirs" "$current"
-	[ -n "$prompt_quit" ] && exit 0
+	[ -n "$prompt_quit" ] && return 0
 
 	if [ -z "$prompt_input" ]; then
 		lvldir="$current"
@@ -680,11 +688,44 @@ level_menu() {
 		lesson=$(level_num_lessons "$lvldir")
 	fi
 	do_lesson "$lvldir" "$lesson"
+	prompt_quit= # signal normal return
+}
+
+until_quit() {
+	local menu_fn
+
+	menu_fn="$1"
+	while true; do
+		"$menu_fn"
+		# Menu can only be quit via prompt. If menu was quit, on
+		# menu_fn return prompt_quit is set.
+		# NOTE: b/c prompt_quit is global and can be overwritten
+		# by subroutines, each menu function should explicitly
+		# clear it before returning normally.
+		[ -z "$prompt_quit" ] || break
+	done
+}
+
+main_menu() {
+	clrscr
+	echo "T E R M G R A S P"
+	echo "================="
+	echo
+
+	prompt_init
+	prompt_addcmd "l" "обучение"
+	prompt_addcmd "s" "настройки"
+	prompt_read
+	[ -n "$prompt_quit" ] && return 0
+
+	case "$prompt_input" in
+		l) until_quit level_menu;;
+		s) until_quit settings;;
+	esac
+	prompt_quit= # signal normal return
 }
 
 profiledir="$HOME"/.termgrasp
 tmp=$(mktemp -dt termgrasp.XXXXXX)
 setup
-while true; do
-	level_menu
-done
+until_quit main_menu
