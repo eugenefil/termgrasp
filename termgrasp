@@ -66,6 +66,13 @@ shuffle() {
 	done | sort | cut -d" " -f2-
 }
 
+press_to_continue() {
+	local input
+
+	printf "Нажмите ↵ для продолжения"
+	read -r input || echo
+}
+
 # In shell to return a string from a function, it must be printed to
 # stdout and then captured. When function has to also do user output,
 # stdout is already occupied for returning a value. These functions let
@@ -86,25 +93,33 @@ check_range() {
 
 prompt_init() {
 	# init global vars used by prompt_* functions
-	prompt_text=
+	prompt_text="Команда"
+	prompt_char=":"
 	prompt_commands=
 	prompt_descriptions=
 	prompt_input=
+	prompt_quitcmd=
 	prompt_quit=
 }
 
 prompt_set() {
 	prompt_text="$1"
+	[ -z "${2-}" ] || prompt_char="$2"
 }
 
 prompt_addcmd() {
 	local cmd desc
 
 	cmd="$1"
-	desc="$2"
-	prompt_descriptions="$prompt_descriptions
+	desc="${2-}"
+	[ -n "$desc" ] && prompt_descriptions="$prompt_descriptions
 $cmd  $desc"
 	prompt_commands="${prompt_commands}$cmd,"
+}
+
+prompt_addquitcmd() {
+	prompt_addcmd "$@"
+	prompt_quitcmd="$1"
 }
 
 prompt_read() {
@@ -113,15 +128,15 @@ prompt_read() {
 	validate_fn="${1-}"
 	[ -n "$validate_fn" ] && shift
 
-	prompt_addcmd "q" "выйти"
-	echo2 "${prompt_descriptions#?}"
-	echo2
+	if [ -n "$prompt_descriptions" ]; then
+		echo2 "${prompt_descriptions#?}"
+		echo2
+	fi
+
 	while true; do
-		if [ -n "$validate_fn" ]; then
-			printf2 "%s или %s: " "$prompt_text" "${prompt_commands%?}"
-		else
-			printf2 "%s: " "Команда"
-		fi
+		printf2 "%s" "$prompt_text"
+		[ -n "$validate_fn" ] && printf2 " или %s" "${prompt_commands%?}"
+		printf2 "%s " "$prompt_char"
 
 		if ! read -r prompt_input; then
 			# EOF
@@ -137,7 +152,7 @@ prompt_read() {
 			if [ "$cmd" = "↵" ]; then
 				[ -z "$prompt_input" ] && break 2
 			elif [ "$cmd" = "$prompt_input" ]; then
-				[ "$cmd" = "q" ] && prompt_quit=1
+				[ "$cmd" = "$prompt_quitcmd" ] && prompt_quit=1
 				break 2
 			fi
 			cmds="${cmds#*,}"
@@ -148,6 +163,19 @@ prompt_read() {
 			"$validate_fn" "$prompt_input" "$@" && break
 		fi
 	done
+}
+
+prompt_do() {
+	prompt_addquitcmd "q" "выйти"
+	prompt_read "$@"
+}
+
+prompt_yesno() {
+	prompt_init
+	prompt_set "$1 [y,n]" "?"
+	prompt_addcmd "y"
+	prompt_addquitcmd "n"
+	prompt_read
 }
 
 # from a list of lines return line specified by 1-based index
@@ -194,7 +222,7 @@ choose_from_shell_history() {
 
 	prompt_init
 	prompt_set "Номер команды"
-	prompt_read check_range 1 "$num_hist"
+	prompt_do check_range 1 "$num_hist"
 	[ -n "$prompt_quit" ] && return 0
 	hist=$(getline "$hist" "$prompt_input")
 	strip_space "$hist"
@@ -521,7 +549,7 @@ do_lesson() {
 			# get input from user
 			prompt_init
 			${tasktype}_prompt
-			prompt_read ${tasktype}_validate
+			prompt_do ${tasktype}_validate
 			[ -n "$prompt_quit" ] && return 0
 			
 			# process input
@@ -543,8 +571,7 @@ do_lesson() {
 			echo "ОШИБКА"
 			${tasktype}_correct "$taskdir"
 		fi
-		printf "Нажмите ↵ для продолжения"
-		read -r input || :
+		press_to_continue
 	done
 
 	# lesson finished, save progress
@@ -674,7 +701,7 @@ level_menu() {
 	prompt_init
 	prompt_set "Номер уровня"
 	[ -n "$current" ] && prompt_addcmd "↵" "играть текущий уровень"
-	prompt_read level_validate "$lvlnum" "$lvldirs" "$current"
+	prompt_do level_validate "$lvlnum" "$lvldirs" "$current"
 	[ -n "$prompt_quit" ] && return 0
 
 	if [ -z "$prompt_input" ]; then
@@ -706,6 +733,44 @@ until_quit() {
 	done
 }
 
+reset_progress() {
+	local levels_dir f
+
+	clrscr
+	echo "ВНИМАНИЕ: вы обнулите свой прогресс в курсе и"
+	echo "начнёте всё с самого начала!"
+	echo
+	prompt_yesno "Сбросить"
+	[ -n "$prompt_quit" ] && return 0
+
+	levels_dir=$(level_store "dummy")
+	levels_dir="${levels_dir%/dummy}"
+	for f in "$levels_dir"/*; do
+		[ -e "$f" ] || continue
+		rm "$f"
+	done
+
+	echo "Прогресс в курсе сброшен"
+	press_to_continue
+}
+
+settings_menu() {
+	clrscr
+	echo "Н А С Т Р О Й К И"
+	echo "================="
+	echo
+
+	prompt_init
+	prompt_addcmd "r" "сбросить прогресс"
+	prompt_do
+	[ -n "$prompt_quit" ] && return 0
+
+	case "$prompt_input" in
+		r) reset_progress;;
+	esac
+	prompt_quit= # signal normal return
+}
+
 main_menu() {
 	clrscr
 	echo "T E R M G R A S P"
@@ -715,12 +780,12 @@ main_menu() {
 	prompt_init
 	prompt_addcmd "l" "обучение"
 	prompt_addcmd "s" "настройки"
-	prompt_read
+	prompt_do
 	[ -n "$prompt_quit" ] && return 0
 
 	case "$prompt_input" in
 		l) until_quit level_menu;;
-		s) until_quit settings;;
+		s) until_quit settings_menu;;
 	esac
 	prompt_quit= # signal normal return
 }
