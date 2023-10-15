@@ -618,7 +618,35 @@ current_level() {
 # duplicate a char number of times
 # $1 - number of times, $2 - char
 dup() {
-	printf "%*s" "$1" "" | tr " " "$2"
+	local n ch s
+
+	n="$1"
+	ch="$2"
+	s=
+	while [ "$n" -gt 0 ]; do
+		s="$s$ch"
+		n=$((n - 1))
+	done
+	echo "$s"
+}
+
+print_header() {
+	local header s hdr
+
+	header="$1"
+	hdr=
+	# turn "header" into "h e a d e r"
+	while [ -n "$header" ]; do
+		s="$header"
+		header="${header#?}"
+		hdr="$hdr${s%$header} "
+	done
+	hdr="${hdr% }"
+
+	clrscr
+	echo "$hdr"
+	echo "$(dup ${#hdr} "=")"
+	echo
 }
 
 level_validate() {
@@ -644,10 +672,7 @@ level_menu() {
 	local lvldirs lvldir current lvlnum lvl lvlstore curmark \
 		num_lessons fin_lessons progress lesson
 
-	clrscr
-	echo "       У Р О В Н И"
-	echo "       ==========="
-	echo
+	print_header "УРОВНИ"
 	echo " Номер  Прогресс  Название"
 	echo
 
@@ -755,11 +780,7 @@ reset_progress() {
 }
 
 settings_menu() {
-	clrscr
-	echo "Н А С Т Р О Й К И"
-	echo "================="
-	echo
-
+	print_header "НАСТРОЙКИ"
 	prompt_init
 	prompt_addcmd "r" "сбросить прогресс"
 	prompt_do
@@ -772,11 +793,7 @@ settings_menu() {
 }
 
 main_menu() {
-	clrscr
-	echo "T E R M G R A S P"
-	echo "================="
-	echo
-
+	print_header "TERMGRASP"
 	prompt_init
 	prompt_addcmd "l" "обучение"
 	prompt_addcmd "s" "настройки"
