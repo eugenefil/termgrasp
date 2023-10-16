@@ -166,7 +166,7 @@ prompt_read() {
 }
 
 prompt_do() {
-	prompt_addquitcmd "q" "выйти"
+	prompt_addquitcmd "q" "Выйти"
 	prompt_read "$@"
 }
 
@@ -318,8 +318,8 @@ cmdentry_dynamic() {
 
 cmdentry_prompt() {
 	prompt_set "Команда"
-	[ -s "$tmp"/history ] && prompt_addcmd "h" "выбрать решение из истории команд терминала"
-	prompt_addcmd "t" "запустить терминал для поиска решения"
+	[ -s "$tmp"/history ] && prompt_addcmd "h" "Выбрать решение из истории команд терминала"
+	prompt_addcmd "t" "Запустить терминал для поиска решения"
 }
 
 cmdentry_validate() {
@@ -406,8 +406,8 @@ cmdblocks_dynamic() {
 cmdblocks_prompt() {
 	prompt_set "Номер блока"
 	if [ -n "$cmdblocks_chosen_blocks" ]; then
-		prompt_addcmd "↵" "готово"
-		prompt_addcmd "d" "удалить блок"
+		prompt_addcmd "↵" "Готово"
+		prompt_addcmd "d" "Удалить блок"
 	fi
 }
 
@@ -725,7 +725,7 @@ level_menu() {
 
 	prompt_init
 	prompt_set "Номер уровня"
-	[ -n "$current" ] && prompt_addcmd "↵" "играть текущий уровень"
+	[ -n "$current" ] && prompt_addcmd "↵" "Играть текущий уровень"
 	prompt_do level_validate "$lvlnum" "$lvldirs" "$current"
 	[ -n "$prompt_quit" ] && return 0
 
@@ -780,9 +780,9 @@ reset_progress() {
 }
 
 settings_menu() {
-	print_header "НАСТРОЙКИ"
+	print_header "Настройки"
 	prompt_init
-	prompt_addcmd "r" "сбросить прогресс"
+	prompt_addcmd "r" "Сбросить прогресс"
 	prompt_do
 	[ -n "$prompt_quit" ] && return 0
 
@@ -795,13 +795,13 @@ settings_menu() {
 main_menu() {
 	print_header "TERMGRASP"
 	prompt_init
-	prompt_addcmd "l" "обучение"
-	prompt_addcmd "s" "настройки"
+	prompt_addcmd "↵" "Обучение"
+	prompt_addcmd "s" "Настройки"
 	prompt_do
 	[ -n "$prompt_quit" ] && return 0
 
 	case "$prompt_input" in
-		l) until_quit level_menu;;
+		"") until_quit level_menu;;
 		s) until_quit settings_menu;;
 	esac
 	prompt_quit= # signal normal return
