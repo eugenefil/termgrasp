@@ -623,21 +623,6 @@ current_level() {
 	echo "$current"
 }
 
-# duplicate a char number of times
-# $1 - number of times, $2 - char
-dup() {
-	local n ch s
-
-	n="$1"
-	ch="$2"
-	s=
-	while [ "$n" -gt 0 ]; do
-		s="$s$ch"
-		n=$((n - 1))
-	done
-	echo "$s"
-}
-
 level_validate() {
 	local input num_levels lvldirs current \
 		i lvldir lvlstore
@@ -659,55 +644,46 @@ level_validate() {
 
 level_menu() {
 	local lvldirs lvldir current lvlnum lvl lvlstore curmark \
-		num_lessons fin_lessons progress lesson
+		num_lessons fin_lessons cur_fin_lessons lesson
 
 	print_header "Обучение"
 	print_sep
-	echo " Номер  Прогресс  Название"
-	echo
 
 	lvldirs=$(level_dirs)
 	current=$(echo "$lvldirs" | current_level)
+	cur_fin_lessons=0
 	lvlnum=0
-	fin_lessons=0
 	while IFS= read -r lvldir; do
-		num_lessons=$(level_num_lessons "$lvldir")
 		lvlnum=$((lvlnum + 1))
+		curmark=
+		[ "$lvldir" = "$current" ] && curmark="=>"
+
+		num_lessons=$(level_num_lessons "$lvldir")
+		fin_lessons=0
 		lvlstore=$(level_store "$lvldir")
-		curmark=" "
-		if [ "$lvldir" = "$current" ]; then
-			curmark="*"
-			# current level is either previously unfinished
-			# or not yet started
-			if [ -e "$lvlstore" ]; then
-				# unfinished - read num of finished lessons
-				IFS= read -r fin_lessons <"$lvlstore"
-				[ "$(wc -l <"$lvlstore")" -lt 2 ] || die "в $lvlstore должна быть одна строка"
-				grep -qx '[1-7]' "$lvlstore" || die "в $lvlstore должно быть число завершённых уроков от 1 до 7"
-				# if due to update total num of lessons
+		if [ -e "$lvlstore" ]; then
+			# level is either unfinished current or finished
+			if [ "$lvldir" = "$current" ]; then
+				# unfinished current: read from storage
+				# and validate num of finished lessons
+				fin_lessons=$(cat "$lvlstore")
+				check_range "$fin_lessons" 1 7 || die "в $lvlstore должно быть число завершённых уроков от 1 до 7"
+
+				# if due to course update total lessons
 				# became less than or equal to lessons
 				# already finished, mark last lesson as
 				# unfinished, so level must be finished
 				if [ "$num_lessons" -le "$fin_lessons" ]; then
 					fin_lessons=$((num_lessons - 1))
 				fi
-				progress="$(dup "$fin_lessons" "#")$(dup "$((num_lessons - fin_lessons))" "-")"
+				cur_fin_lessons="$fin_lessons"
 			else
-				# not started - mark all lessons unfinished
-				progress=$(dup "$num_lessons" "-")
-			fi
-		else
-			# non-current level is either already finished
-			# or not yet started
-			if [ -e "$lvlstore" ]; then
-				# finished - mark all lessons finished
-				progress=$(dup "$num_lessons" "#")
-			else
-				# not started - mark all lessons locked
-				progress=$(dup "$num_lessons" "x")
+				# finished: mark all lessons finished no
+				# matter what's in storage
+				fin_lessons="$num_lessons"
 			fi
 		fi
-		printf "%s%5d  %-8s  %s\n" "$curmark" $lvlnum "$progress" "${lvlstore##*/}"
+		printf "%-2s %2s  %s/%s  %s\n" $lvlnum "$curmark" "$fin_lessons" "$num_lessons" "${lvlstore##*/}"
 	done <<-EOF
 	$lvldirs
 	EOF
@@ -724,7 +700,7 @@ level_menu() {
 		lvldir=$(getline "$lvldirs" "$prompt_input")
 	fi
 	if [ "$lvldir" = "$current" ]; then
-		lesson=$((fin_lessons + 1))
+		lesson=$((cur_fin_lessons + 1))
 	else
 		lesson=$(level_num_lessons "$lvldir")
 	fi
