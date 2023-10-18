@@ -32,6 +32,7 @@ clrscr() {
 
 urandom() {
 	local n
+	set -e
 
 	n=$(od -An -N2 -tu2 /dev/urandom)
 	echo $n # no quotes - remove leading spaces
@@ -58,7 +59,8 @@ setup() {
 "
 
 	# if shell does not support $RANDOM, use /dev/urandom
-	[ -n "${RANDOM:-}" ] && RND=random_env || RND=urandom
+	RND=random_env
+	[ -n "${RANDOM:-}" ] || RND=urandom
 }
 
 terminal() {
