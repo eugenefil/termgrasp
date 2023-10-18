@@ -42,6 +42,10 @@ random_env() {
 }
 
 setup() {
+	PROFILEDIR="$HOME"/.termgrasp
+
+	TMP=$(mktemp -dt termgrasp.XXXXXX)
+
 	# We don't need "more" util to stop after the last screen, only
 	# between screenfuls. Per posix more _shall_ prompt on eof,
 	# unless -e is given. Util-linux more obeys posix, so needs -e.
@@ -61,21 +65,22 @@ terminal() {
 	local taskdir
 
 	taskdir="$1"
-	rm -rf "$tmp"/*
+	rm -rf "$TMP"/*
 	if [ -d "$taskdir"/workdir ]; then
-		cp -a "$taskdir"/workdir "$tmp"
+		cp -a "$taskdir"/workdir "$TMP"
 	else
-		mkdir "$tmp"/workdir
+		mkdir "$TMP"/workdir
 	fi
 
-	(cd "$tmp"/workdir;
-		HISTFILE="$tmp"/history \
+	(cd "$TMP"/workdir;
+		HISTFILE="$TMP"/history \
 		PS1='$ ' \
 		exec /bin/sh) || :
 }
 
 shuffle() {
 	local item rnd
+	set -e
 
 	while IFS= read -r item; do
 		rnd=$($RND)
@@ -231,7 +236,7 @@ choose_from_shell_history() {
 	local hist num_hist
 	set -e
 
-	hist=$(cat "$tmp"/history)
+	hist=$(cat "$TMP"/history)
 	[ -n "$hist" ] || return 0 # should not happen normally
 	num_hist=$(echo "$hist" | wc -l)
 
@@ -270,7 +275,7 @@ level_store() {
 	lvldir="$1"
 	lvlname="${lvldir##*/}"
 	lvlname="${lvlname#*-}" # remove ordering prefix
-	echo "$profiledir/levels/$lvlname"
+	echo "$PROFILEDIR/levels/$lvlname"
 }
 
 choices_init() {
@@ -330,7 +335,7 @@ choices_correct() {
 }
 
 cmdentry_init() {
-	rm -rf "$tmp"/history
+	rm -rf "$TMP"/history
 	
 	# init global vars used by cmdentry_* functions
 	cmdentry_command=
@@ -342,7 +347,7 @@ cmdentry_dynamic() {
 
 cmdentry_prompt() {
 	prompt_set "Команда"
-	[ -s "$tmp"/history ] && prompt_addcmd "h" "Выбрать решение из истории команд терминала"
+	[ -s "$TMP"/history ] && prompt_addcmd "h" "Выбрать решение из истории команд терминала"
 	prompt_addcmd "t" "Запустить терминал для поиска решения"
 }
 
@@ -359,7 +364,7 @@ cmdentry_process() {
 		echo2
 		echo2 "Для выхода введите exit или нажмите Ctrl-D в пустой строке"
 		terminal "$taskdir" >&2
-	elif [ -s "$tmp"/history ] && [ "$input" = "h" ]; then
+	elif [ -s "$TMP"/history ] && [ "$input" = "h" ]; then
 		cmdentry_command=$(choose_from_shell_history)
 	else
 		cmdentry_command="$input"
@@ -795,7 +800,5 @@ main_menu() {
 	prompt_quit= # signal normal return
 }
 
-profiledir="$HOME"/.termgrasp
-tmp=$(mktemp -dt termgrasp.XXXXXX)
 setup
 until_quit main_menu
