@@ -1,4 +1,10 @@
 #!/bin/sh
+
+# Note: per posix, -e option must be inherited by subshell, but bash
+# historically reset -e for command substitution $(). Dash did that too,
+# but later complied with posix. When run as sh or with --posix bash
+# also complies. Busybox ash _still_ repeats original bash behaviour.
+# Assume -e is disabled by shell when doing command substitution.
 set -eu
 
 me="${0##*/}"
@@ -193,6 +199,7 @@ prompt_yesno() {
 # $1 - lines, $2 - index
 getline() {
 	local lines idx i line
+	set -e
 
 	lines="$1"
 	idx="$2"
@@ -222,6 +229,7 @@ strip_space() {
 
 choose_from_shell_history() {
 	local hist num_hist
+	set -e
 
 	hist=$(cat "$tmp"/history)
 	[ -n "$hist" ] || return 0 # should not happen normally
@@ -239,6 +247,7 @@ choose_from_shell_history() {
 
 get_subdirs() {
 	local subdirs
+	set -e
 
 	subdirs=$(find "$1" -mindepth 1 -maxdepth 1 -type d)
 	echo "$subdirs" | sort
@@ -246,6 +255,7 @@ get_subdirs() {
 
 num_subdirs() {
 	local subdirs
+	set -e
 
 	subdirs=$(get_subdirs "$1")
 	[ -z "$subdirs" ] && echo 0 && return 0
@@ -398,6 +408,7 @@ $i  $block"
 
 cmdblocks_get_command() {
 	local cmd i block
+	set -e
 
 	cmd=
 	while read -r i block; do
@@ -514,6 +525,7 @@ cmdblocks_process() {
 }
 
 cmdblocks_solution() {
+	set -e
 	# non-empty input means we're still composing the command
 	[ -z "$1" ] || return 0
 	cmdblocks_get_command
@@ -614,6 +626,7 @@ do_lesson() {
 # expects list of course level dirs on stdin
 current_level() {
 	local current lvldir lvlstore
+	set -e
 
 	current=
 	while IFS= read -r lvldir; do
