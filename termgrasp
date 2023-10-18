@@ -609,12 +609,14 @@ do_lesson() {
 		is_correct=$(${tasktype}_check "$solution" "$taskdir")
 
 		# print result
+		echo
 		if [ -n "$is_correct" ]; then
-			echo "ПРАВИЛЬНО"
+			echo "ВЕРНО!"
 		else
-			echo "ОШИБКА"
+			echo "НЕВЕРНО! Правильный ответ:"
 			${tasktype}_correct "$taskdir"
 		fi
+		echo
 		press_to_continue
 	done
 
