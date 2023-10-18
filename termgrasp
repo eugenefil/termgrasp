@@ -237,14 +237,19 @@ choose_from_shell_history() {
 	strip_space "$hist"
 }
 
-# return num of lessons for a level
-# $1 - level dir
-level_num_lessons() {
-	local num_lessons
+get_subdirs() {
+	local subdirs
 
-	num_lessons=$(find "$1" -mindepth 1 -maxdepth 1 -type d)
-	[ -n "$num_lessons" ] || die "$1 не содержит уроков"
-	echo "$num_lessons" | wc -l
+	subdirs=$(find "$1" -mindepth 1 -maxdepth 1 -type d)
+	echo "$subdirs" | sort
+}
+
+num_subdirs() {
+	local subdirs
+
+	subdirs=$(get_subdirs "$1")
+	[ -z "$subdirs" ] && echo 0 && return 0
+	echo "$subdirs" | wc -l
 }
 
 # return path to storage file for level progress
@@ -527,13 +532,23 @@ cmdblocks_correct() {
 }
 
 do_lesson() {
-	local lvldir lesson taskdir tasktype input solution is_correct \
-		num_lessons lvlstore newstore
+	local lvldir lesson taskdirs taskdir i num_tasks tasktype \
+		solution is_correct num_lessons lvlstore newstore
 
 	lvldir="$1"
 	lesson="$2"
-	for taskdir in "$lvldir/$lesson"/*; do
-		[ -e "$taskdir" ] || die "$lvldir/$lesson не содержит заданий"
+	taskdirs=$(get_subdirs "$lvldir/$lesson")
+	[ -n "$taskdirs" ] || die "$lvldir/$lesson не содержит заданий"
+	num_tasks=$(echo "$taskdirs" | wc -l)
+	taskdirs="$taskdirs
+"
+	i=0
+	while [ -n "$taskdirs" ]; do
+		i=$((i + 1))
+		taskdir="${taskdirs%%
+*}"
+		taskdirs="${taskdirs#*
+}"
 
 		if [ -e "$taskdir"/choices ]; then
 			tasktype=choices
@@ -547,8 +562,10 @@ do_lesson() {
 
 		solution=
 		while [ -z "$solution" ]; do
+			print_header "$i/$num_tasks"
+			print_sep
+
 			# print static part of task
-			clrscr
 			cat "$taskdir"/task
 
 			# print dynamic part of task
@@ -583,7 +600,7 @@ do_lesson() {
 	done
 
 	# lesson finished, save progress
-	num_lessons=$(level_num_lessons "$lvldir")
+	num_lessons=$(num_subdirs "$lvldir")
 	lvlstore=$(level_store "$lvldir")
 	newstore=$(mktemp)
 	# if level is finished, write empty string to level progress
@@ -591,14 +608,6 @@ do_lesson() {
 	[ "$lesson" -lt "$num_lessons" ] && echo "$lesson" >"$newstore"
 	mkdir -p "${lvlstore%/*}"
 	mv "$newstore" "$lvlstore"
-}
-
-level_dirs() {
-	local lvldirs
-
-	lvldirs=$(find levels -mindepth 1 -maxdepth 1 -type d)
-	[ -n "$lvldirs" ] || die "уровни не найдены"
-	echo "$lvldirs" | sort
 }
 
 # search current level and return its dir
@@ -649,7 +658,8 @@ level_menu() {
 	print_header "Обучение"
 	print_sep
 
-	lvldirs=$(level_dirs)
+	lvldirs=$(get_subdirs "./levels")
+	[ -n "$lvldirs" ] || die "./levels не содержит уровней"
 	current=$(echo "$lvldirs" | current_level)
 	cur_fin_lessons=0
 	lvlnum=0
@@ -658,7 +668,8 @@ level_menu() {
 		curmark=
 		[ "$lvldir" = "$current" ] && curmark="=>"
 
-		num_lessons=$(level_num_lessons "$lvldir")
+		num_lessons=$(num_subdirs "$lvldir")
+		[ "$num_lessons" -gt 0 ] || die "$lvldir не содержит уроков"
 		fin_lessons=0
 		lvlstore=$(level_store "$lvldir")
 		if [ -e "$lvlstore" ]; then
@@ -702,7 +713,7 @@ level_menu() {
 	if [ "$lvldir" = "$current" ]; then
 		lesson=$((cur_fin_lessons + 1))
 	else
-		lesson=$(level_num_lessons "$lvldir")
+		lesson=$(num_subdirs "$lvldir") # take last lesson
 	fi
 	do_lesson "$lvldir" "$lesson"
 	prompt_quit= # signal normal return
