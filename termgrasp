@@ -63,7 +63,9 @@ setup() {
 	[ -n "${RANDOM:-}" ] || RND=urandom
 
 	hp=$(cat "$PROFILEDIR"/hp 2>/dev/null) || hp=3
-	[ "$hp" -ge 0 ] 2>/dev/null || die "$PROFILEDIR/hp должен содержать значение HP больше или равно 0"
+	[ "$hp" -ge 0 ] 2>/dev/null || die "$PROFILEDIR/hp должен содержать неотрицательное значение HP"
+	hp_timestamp=$(cat "$PROFILEDIR"/hp_timestamp 2>/dev/null) || hp_timestamp=0
+	[ "$hp_timestamp" -ge 0 ] 2>/dev/null || die "$PROFILEDIR/hp_timestamp должен содержать метку времени Unix"
 }
 
 terminal() {
@@ -553,9 +555,42 @@ cmdblocks_correct() {
 	head -1 "$1"/solution
 }
 
-write_hp() {
+hp_set() {
+	hp="$1"
+	hp_timestamp=$(date "+%s")
 	mkdir -p "$PROFILEDIR"
-	echo "$hp" >"$PROFILEDIR/hp"
+	echo "$hp" >"$PROFILEDIR"/hp
+	echo "$hp_timestamp" >"$PROFILEDIR"/hp_timestamp
+}
+
+hp_min_left_to_restore() {
+	local now left
+	set -e
+
+	now=$(date "+%s")
+	left=$((hp_timestamp + 30 * 60 - now))
+	[ "$left" -le 0 ] && echo 0 && return 0
+	echo $(((left + 59) / 60)) # round up to minute
+}
+
+hp_update() {
+	local left_to_restore
+
+	[ "$hp" -eq 0 ] || return 0
+	left_to_restore=$(hp_min_left_to_restore)
+	[ "$left_to_restore" -gt 0 ] || hp_set 3
+}
+
+hp_print_no_hp_msg() {
+	local left_to_restore
+
+	print_header "$1    HP:$hp"
+	print_sep
+	echo "У вас не осталось HP."
+	left_to_restore=$(hp_min_left_to_restore)
+	echo "HP восстановится через $left_to_restore мин."
+	echo
+	press_to_continue
 }
 
 do_lesson() {
@@ -589,7 +624,7 @@ do_lesson() {
 
 		solution=
 		while [ -z "$solution" ]; do
-			print_header "$i/$num_tasks  HP:$hp"
+			print_header "$i/$num_tasks    HP:$hp"
 			print_sep
 
 			# print static part of task
@@ -621,20 +656,16 @@ do_lesson() {
 		if [ -n "$is_correct" ]; then
 			echo "ВЕРНО!"
 		else
+			hp_set "$((hp - 1))" # decrease hp asap
 			echo "НЕВЕРНО! Правильный ответ:"
 			${tasktype}_correct "$taskdir"
-			hp=$((hp - 1))
-			write_hp
 		fi
 		echo
 		press_to_continue
 
-		if [ $hp -eq 0 ]; then
-			print_header "$i/$num_tasks  HP:$hp"
-			print_sep
-			echo "У вас нет HP, чтобы играть дальше."
-			echo
-			press_to_continue
+		if [ "$hp" -eq 0 ]; then
+			hp_set "$hp" # rewind possibly expired timeout
+			hp_print_no_hp_msg "$i/$num_tasks"
 			return 0
 		fi
 	done
@@ -696,6 +727,7 @@ level_menu() {
 	local lvldirs lvldir current lvlnum lvl lvlstore curmark \
 		num_lessons fin_lessons cur_fin_lessons lesson
 
+	hp_update
 	print_header "Обучение    HP:$hp"
 	print_sep
 
@@ -746,12 +778,9 @@ level_menu() {
 	prompt_do level_validate "$lvlnum" "$lvldirs" "$current"
 	[ -n "$prompt_quit" ] && return 0
 
-	if [ $hp -eq 0 ]; then
-		print_header "Обучение    HP:$hp"
-		print_sep
-		echo "У вас нет HP, чтобы начать урок."
-		echo
-		press_to_continue
+	hp_update
+	if [ "$hp" -eq 0 ]; then
+		hp_print_no_hp_msg "Обучение"
 		prompt_quit= # signal normal return
 		return 0
 	fi
