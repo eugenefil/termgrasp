@@ -830,7 +830,9 @@ reset_progress() {
 		rm "$f"
 	done
 
+	echo
 	echo "Прогресс в курсе сброшен"
+	echo
 	press_to_continue
 }
 
