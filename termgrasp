@@ -61,6 +61,9 @@ setup() {
 	# if shell does not support $RANDOM, use /dev/urandom
 	RND=random_env
 	[ -n "${RANDOM:-}" ] || RND=urandom
+
+	hp=$(cat "$PROFILEDIR"/hp 2>/dev/null) || hp=3
+	[ "$hp" -ge 0 ] 2>/dev/null || die "$PROFILEDIR/hp должен содержать значение HP больше или равно 0"
 }
 
 terminal() {
@@ -550,6 +553,11 @@ cmdblocks_correct() {
 	head -1 "$1"/solution
 }
 
+write_hp() {
+	mkdir -p "$PROFILEDIR"
+	echo "$hp" >"$PROFILEDIR/hp"
+}
+
 do_lesson() {
 	local lvldir lesson taskdirs taskdir i num_tasks tasktype \
 		solution is_correct num_lessons lvlstore newstore
@@ -581,7 +589,7 @@ do_lesson() {
 
 		solution=
 		while [ -z "$solution" ]; do
-			print_header "$i/$num_tasks"
+			print_header "$i/$num_tasks  HP:$hp"
 			print_sep
 
 			# print static part of task
@@ -615,9 +623,20 @@ do_lesson() {
 		else
 			echo "НЕВЕРНО! Правильный ответ:"
 			${tasktype}_correct "$taskdir"
+			hp=$((hp - 1))
+			write_hp
 		fi
 		echo
 		press_to_continue
+
+		if [ $hp -eq 0 ]; then
+			print_header "$i/$num_tasks  HP:$hp"
+			print_sep
+			echo "У вас нет HP, чтобы играть дальше."
+			echo
+			press_to_continue
+			return 0
+		fi
 	done
 
 	# lesson finished, save progress
@@ -677,7 +696,7 @@ level_menu() {
 	local lvldirs lvldir current lvlnum lvl lvlstore curmark \
 		num_lessons fin_lessons cur_fin_lessons lesson
 
-	print_header "Обучение"
+	print_header "Обучение    HP:$hp"
 	print_sep
 
 	lvldirs=$(get_subdirs "./levels")
@@ -726,6 +745,16 @@ level_menu() {
 	[ -n "$current" ] && prompt_addcmd "↵" "Играть текущий уровень"
 	prompt_do level_validate "$lvlnum" "$lvldirs" "$current"
 	[ -n "$prompt_quit" ] && return 0
+
+	if [ $hp -eq 0 ]; then
+		print_header "Обучение    HP:$hp"
+		print_sep
+		echo "У вас нет HP, чтобы начать урок."
+		echo
+		press_to_continue
+		prompt_quit= # signal normal return
+		return 0
+	fi
 
 	if [ -z "$prompt_input" ]; then
 		lvldir="$current"
