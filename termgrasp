@@ -66,6 +66,9 @@ setup() {
 	[ "$hp" -ge 0 ] 2>/dev/null || die "$PROFILEDIR/hp должен содержать неотрицательное значение HP"
 	hp_timestamp=$(cat "$PROFILEDIR"/hp_timestamp 2>/dev/null) || hp_timestamp=0
 	[ "$hp_timestamp" -ge 0 ] 2>/dev/null || die "$PROFILEDIR/hp_timestamp должен содержать метку времени Unix"
+	
+	xp=$(cat "$PROFILEDIR"/xp 2>/dev/null) || xp=0
+	[ "$xp" -ge 0 ] 2>/dev/null || die "$PROFILEDIR/xp должен содержать неотрицательное значение XP"
 }
 
 terminal() {
@@ -584,7 +587,7 @@ hp_update() {
 hp_print_no_hp_msg() {
 	local left_to_restore
 
-	print_header "$1    HP:$hp"
+	print_header "$1"
 	print_sep
 	echo "У вас не осталось HP."
 	left_to_restore=$(hp_min_left_to_restore)
@@ -665,7 +668,7 @@ do_lesson() {
 
 		if [ "$hp" -eq 0 ]; then
 			hp_set "$hp" # rewind possibly expired timeout
-			hp_print_no_hp_msg "$i/$num_tasks"
+			hp_print_no_hp_msg "$i/$num_tasks    HP:$hp"
 			return 0
 		fi
 	done
@@ -679,6 +682,13 @@ do_lesson() {
 	[ "$lesson" -lt "$num_lessons" ] && echo "$lesson" >"$newstore"
 	mkdir -p "${lvlstore%/*}"
 	mv "$newstore" "$lvlstore"
+
+	xp=$((xp + 10))
+	echo "$xp" >"$PROFILEDIR"/xp
+	clrscr
+	echo "Вы заработали 10 XP."
+	echo
+	press_to_continue
 }
 
 # search current level and return its dir
@@ -728,7 +738,7 @@ level_menu() {
 		num_lessons fin_lessons cur_fin_lessons lesson
 
 	hp_update
-	print_header "Обучение    HP:$hp"
+	print_header "Обучение    HP:$hp  XP:$xp"
 	print_sep
 
 	lvldirs=$(get_subdirs "./levels")
@@ -780,7 +790,7 @@ level_menu() {
 
 	hp_update
 	if [ "$hp" -eq 0 ]; then
-		hp_print_no_hp_msg "Обучение"
+		hp_print_no_hp_msg "Обучение    HP:$hp  XP:$xp"
 		prompt_quit= # signal normal return
 		return 0
 	fi
