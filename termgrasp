@@ -101,6 +101,7 @@ shuffle() {
 press_to_continue() {
 	local input
 
+	echo
 	printf "Нажмите ↵ для продолжения"
 	read -r input || echo
 }
@@ -592,7 +593,6 @@ hp_print_no_hp_msg() {
 	echo "У вас не осталось HP."
 	left_to_restore=$(hp_min_left_to_restore)
 	echo "HP восстановится через $left_to_restore мин."
-	echo
 	press_to_continue
 }
 
@@ -663,7 +663,6 @@ do_lesson() {
 			echo "НЕВЕРНО! Правильный ответ:"
 			${tasktype}_correct "$taskdir"
 		fi
-		echo
 		press_to_continue
 
 		if [ "$hp" -eq 0 ]; then
@@ -687,7 +686,6 @@ do_lesson() {
 	echo "$xp" >"$PROFILEDIR"/xp
 	clrscr
 	echo "Вы заработали 10 XP."
-	echo
 	press_to_continue
 }
 
@@ -842,7 +840,6 @@ reset_progress() {
 
 	echo
 	echo "Прогресс в курсе сброшен"
-	echo
 	press_to_continue
 }
 
