@@ -598,18 +598,26 @@ hp_print_no_hp_msg() {
 
 do_lesson() {
 	local lvldir lesson taskdirs taskdir i num_tasks tasktype \
-		solution is_correct num_lessons lvlstore newstore
+		solution is_correct num_lessons lvlstore newstore \
+		orig_num_tasks
 
 	lvldir="$1"
 	lesson="$2"
 	taskdirs=$(get_subdirs "$lvldir/$lesson")
 	[ -n "$taskdirs" ] || die "$lvldir/$lesson не содержит заданий"
 	num_tasks=$(echo "$taskdirs" | wc -l)
+	orig_num_tasks="$num_tasks"
 	taskdirs="$taskdirs
 "
 	i=0
 	while [ -n "$taskdirs" ]; do
 		i=$((i + 1))
+		if [ "$i" -eq $((orig_num_tasks + 1)) ]; then
+			clrscr
+			echo "Проведём работу над ошибками!"
+			press_to_continue
+		fi
+
 		taskdir="${taskdirs%%
 *}"
 		taskdirs="${taskdirs#*
@@ -662,6 +670,11 @@ do_lesson() {
 			hp_set "$((hp - 1))" # decrease hp asap
 			echo "НЕВЕРНО! Правильный ответ:"
 			${tasktype}_correct "$taskdir"
+
+			# append failed task for later work on mistakes
+			num_tasks=$((num_tasks + 1))
+			taskdirs="${taskdirs}$taskdir
+"
 		fi
 		press_to_continue
 
