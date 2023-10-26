@@ -580,7 +580,7 @@ hp_min_left_to_restore() {
 hp_update() {
 	local left_to_restore
 
-	[ "$hp" -eq 0 ] || return 0
+	[ "$hp" -lt 3 ] || return 0
 	left_to_restore=$(hp_min_left_to_restore)
 	[ "$left_to_restore" -gt 0 ] || hp_set 3
 }
