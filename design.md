@@ -20,9 +20,9 @@ Like in duolingo, inside one lesson tasks progress from simpler to harder. Also 
 
 ## how duolingo does it
 
-Duolingo does typical lessons of 13-15 tasks. If all tasks are completed without error, 2 extra tasks of higher complexity are done, otherwise failed tasks are repeated. 3-7 lessons form a level. Last lesson of the level is for reviewing the mistakes and/or reinforcing the material with harder tasks. It is shorter and may be skipped.
+Duolingo does typical lessons of 15 tasks. If 13 tasks are completed without error, 2 last tasks will have higher complexity, otherwise failed tasks are repeated after task 15 _endlessly_ until every task is answered correctly. 3-7 lessons form a level. Last lesson of the level is for reviewing the mistakes and/or reinforcing the material with harder tasks. It is typically shorter.
 
-A topic takes 3 levels of progressing complexity. The hardest tasks of the 1st level are among normal tasks of the 2nd. Level 1 is for introducing new words with pictures.
+A topic takes 3 levels of progressing complexity. The hardest tasks of the 1st level are among normal tasks of the 2nd. Level 1 is for introducing new words and phrases. There are no new words/phrases in levels 2-3 - they are for reinforcing.
 
 2 topics of 3 levels each are grouped into a unit along with extra levels (3 stories, 1 personalized practice and final review) giving typically 11 levels per unit. Topic levels are intertwined somewhat: t1-easy t1-medium t2-easy t1-hard t2-medium t2-hard. Units are just containers for levels and have no names, numbered sequentially.
 
