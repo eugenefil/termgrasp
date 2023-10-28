@@ -16,13 +16,15 @@ A lesson consists of tasks belonging to one topic. One lesson is typically not e
 
 Summing up, our content hierarchy is level-lesson-task. A number of tasks 15-25 min worth of work form a lesson. 3-7 lessons covering some topic form a level. If a topic is big enough, it has multiple levels as needed to cover it.
 
-Like in duolingo, inside one lesson tasks progress from simpler to harder. Also levels of one topic progress from simpler to harder (if appropriate).
-
 ## how duolingo does it
 
-Duolingo does typical lessons of 15 tasks. If 13 tasks are completed without error, 2 last tasks will have higher complexity, otherwise failed tasks are repeated after task 15 _endlessly_ until every task is answered correctly. 3-7 lessons form a level. Last lesson of the level is for reviewing the mistakes and/or reinforcing the material with harder tasks. It is typically shorter.
+Duolingo does typical lessons of 15 tasks. If 13 tasks are completed without error, 2 last tasks will have higher complexity, otherwise failed tasks are repeated after task 15 _endlessly_ until every task is answered correctly.
 
-A topic takes 3 levels of progressing complexity. The hardest tasks of the 1st level are among normal tasks of the 2nd. Level 1 is for introducing new words and phrases. There are no new words/phrases in levels 2-3 - they are for reinforcing.
+3-7 lessons form a level. Lessons don't have names, levels do. Last lesson of the level is for reviewing the mistakes and reinforcing the material with harder tasks. It is typically shorter.
+
+A topic takes 3 levels of progressing complexity. The hardest task type of level 1 - make a sentence in target lang from blocks - is among normal tasks of level 2. The hardest task type of level 2 - write a sentence in target lang from scratch - is _not_ among normal tasks of level 3. Instead a simpler variant is normally used in level 3 - write a part of sentence from scratch. The hardest task type - write a sentence from scratch - is normally used only in the unit final (see below) test, that acts as a gateway into the next unit. Thus duolingo increases complexity slower than linearly and only requires absolute knowledge once - at the very end of the unit.
+
+Level 1 is for introducing new words and phrases. There are no new words/phrases in levels 2-3 - they are for reinforcing material from level 1 only.
 
 2 topics of 3 levels each are grouped into a unit along with extra levels (3 stories, 1 personalized practice and final review) giving typically 11 levels per unit. Topic levels are intertwined somewhat: t1-easy t1-medium t2-easy t1-hard t2-medium t2-hard. Units are just containers for levels and have no names, numbered sequentially.
 
