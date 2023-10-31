@@ -28,6 +28,26 @@ Level 1 is for introducing new words and phrases. There are no new words/phrases
 
 2 topics of 3 levels each are grouped into a unit along with extra levels (3 stories, 1 personalized practice and final review) giving typically 11 levels per unit. Topic levels are intertwined somewhat: t1-easy t1-medium t2-easy t1-hard t2-medium t2-hard. Units are just containers for levels and have no names, numbered sequentially.
 
+## modular scheme proposal
+
+Duolingo scheme of typical 5-6 lessons per level, where level 1 introduces words/concepts and levels 2-3 reinforce, seems not very flexible, b/c how to decide how many new concepts to put into those 5-6 lessons of level1? Natural language is more flexible - you can possibly get as many words/phrases as you wish. But how much would you get from, say, wc? Should it occupy its own level or be mixed with other util? If mixed, then which util and what if you later try to separate? If one later wants to refresh wc, why should he refresh the other util? It's harder to name such a level devoted to a couple of (even related) things.
+
+Also finishing duolingo levels on some topic doesn't end up in proficiency. Even in level 3 you mostly assemble sentences from blocks.
+
+So the proposed solution is to divide knowledge into small modules that deal with one concept only and do the necessary drilling end-to-end: from introducing the concept to gaining proficiency on the terminal writing full commands from scratch without any hint. E.g. "pacman -S" module makes sure you understand the underlying repository concept and can freely use the command to install packages. You don't mix "pacman -S" with other pacman ops in one module.
+
+This has advantages:
+
+- When adding a module, you have to think less, how it fits the overall course - it doesn't mix with other modules. Removing is also easier.
+
+- Naming is easier, b/c module is devoted to one thing only. As a consequence, searching for revising the material is also easier.
+
+- Modules may be really short if the content is short and it's fine. You don't have to bring other stuff just to provide enough lessons/levels. The only thing needed is to reach the goal of proficiency.
+
+This is a bit akin to unix philosophy, where utils do one thing only.
+
+Modules may probably have other modules as dependencies. E.g. you need to know grep/regex to fully use "pacman -Ss". Should "pacman -S" module depend on "basic sudo" module or introduce basic sudo usage itself?
+
 # level content
 
 ## package manager
