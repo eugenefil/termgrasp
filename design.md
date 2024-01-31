@@ -1,4 +1,4 @@
-# introduction
+# Introduction
 
 The goal of termgrasp is to teach working in a terminal including understanding of key unix concepts, usage of common utilities and shell scripting. Terminal is hard, so teaching process must resemble that of Duolingo - slow, "bite-sized" and with a lot of repetition. The idea is to smoothen the learning curve as much as possible, so that you could start with zero knowledge and very gradually come to pretty advanced knowledge and skills without resorting to other sources.
 
@@ -8,7 +8,7 @@ At the same time, the point of termgrasp is to teach real practical working in t
 
 The program should feel more or less familiar to Duolingo users.
 
-# level structure
+# Level structure
 
 The unit of interaction with the program is a lesson comprised of tasks. Lesson may be short, but it must not be long. The attention span of children is not long. The lesson should be easily consumed in one go without making pauses. Also, making pauses may lead to Android killing a terminal app (where our program runs) to free memory, which results in lost progress. So a lesson of 15-25 min is fine.
 
@@ -16,7 +16,7 @@ A lesson consists of tasks belonging to one topic. One lesson is typically not e
 
 Summing up, our content hierarchy is level-lesson-task. A number of tasks 15-25 min worth of work form a lesson. 3-7 lessons covering some topic form a level. If a topic is big enough, it has multiple levels as needed to cover it.
 
-## how duolingo does it
+## How Duolingo does it
 
 Duolingo does typical lessons of 15 tasks. If 13 tasks are completed without error, 2 last tasks will have higher complexity, otherwise failed tasks are repeated after task 15 _endlessly_ until every task is answered correctly.
 
@@ -28,7 +28,7 @@ Level 1 is for introducing new words and phrases. There are no new words/phrases
 
 2 topics of 3 levels each are grouped into a unit along with extra levels (3 stories, 1 personalized practice and final review) giving typically 11 levels per unit. Topic levels are intertwined somewhat: t1-easy t1-medium t2-easy t1-hard t2-medium t2-hard. Units are just containers for levels and have no names, numbered sequentially.
 
-## modular scheme proposal
+## Modular scheme proposal
 
 Duolingo scheme of typical 5-6 lessons per level, where level 1 introduces words/concepts and levels 2-3 reinforce, seems not very flexible, b/c how to decide how many new concepts to put into those 5-6 lessons of level1? Natural language is more flexible - you can possibly get as many words/phrases as you wish. But how much would you get from, say, wc? Should it occupy its own level or be mixed with other util? If mixed, then which util and what if you later try to separate? If one later wants to refresh wc, why should he refresh the other util? It's harder to name such a level devoted to a couple of (even related) things.
 
@@ -48,9 +48,9 @@ This is a bit akin to unix philosophy, where utils do one thing only.
 
 Modules may probably have other modules as dependencies. E.g. you need to know grep/regex to fully use "pacman -Ss". Should "pacman -S" module depend on "basic sudo" module or introduce basic sudo usage itself?
 
-# level content
+# Level content
 
-## package manager
+## Package manager
 
 Teach distro-specific (ask for distro and/or detect current distro) ways to search, install, remove packages, update the system, view package contents, etc.
 
@@ -68,7 +68,7 @@ Later levels introduce commands that demand more advanced knowledge: view packag
 
 git may be needed not just for programming. E.g. you have a driver package (say, nvidia drivers) from AUR that must be rebuilt every time you update the system. You need git clone for initial install and then git pull for every update.
 
-# level navigation
+# Level navigation
 
 Termgrasp, like duolingo, is supposed to be game-like. When you start, all levels except level 1 are locked. So you start from level 1 and work your way through lessons sequentially to unlock level 2, then level 3, etc.
 
@@ -80,13 +80,13 @@ Similar to duolingo, finished levels may be done again. When choosing a finished
 
 Also see "determining current level" in level updates.
 
-# level updates
+# Level updates
 
 Level content is not fixed, it's supposed to be constantly improving. This inevitably leads to updating levels while the user is in the middle of the course, probably doing those same levels that are being updated.
 
 Possible updates are: add level, remove level, edit level, move level (change position in course). Also it's important to what part of the course the update is happening: already finished levels (past levels), unfinished current level, not yet started levels (future levels).
 
-## principles of update
+## Principles of updating
 
 Following principles should be obeyed whenever possible when updating level content:
 
@@ -94,7 +94,7 @@ Following principles should be obeyed whenever possible when updating level cont
 
 - current level should be allowed to finish
 
-## determining current level
+## Determining current level
 
 Current level is searched as follows, whichever is found first:
 
@@ -102,7 +102,7 @@ Current level is searched as follows, whichever is found first:
 
 - The lowest in course, that is not started (i.e. with no finished lessons). This behavior ensures that new content, even when added/moved to past part of the course, is always addressed by user.
 
-## tracking progress
+## Tracking progress
 
 Since levels may be easily moved and removed, level progress is stored as a list of (un)finished levels and not some index number. A level is represented by its unique name. At most one level may have attached to it the number of lessons finished - this is unfinished current level. See determining current level.
 
@@ -114,13 +114,13 @@ This way for each level in the course:
 
 - if there's no matching level in progress storage - level is considered not started, i.e. future level
 
-## updates to future levels
+## Updates to future levels
 
 Adding, removing or editing future levels may be freely done.
 
 When moving some future level below current level in the course order, i.e. into past levels, this is akin to adding new level to past levels, which see below.
 
-## updates to past levels
+## Updates to past levels
 
 When a new level is added to course such that its position is below current level (i.e. among levels already finished), it will become the new current level, but only after current level is allowed to finish (see determining current level).
 
@@ -130,7 +130,7 @@ When a level is finished, the content associated with it is considered grasped b
 
 When past level is moved into future levels, it keeps its finished status and must be skipped over when reached.
 
-## updates to unfinished current level
+## Updates to unfinished current level
 
 Current level can't be added.
 
@@ -140,7 +140,7 @@ When current level is edited, progress (incl. lessons already finished) is kept.
 
 When current level is moved to future or past levels, its progress is kept and it's continued as usual.
 
-# task types
+# Task types
 
 The code is read and written. So there must be tasks that test the understanding of existing code (reading) and that create new code to solve a problem (writing). Reading code is harder, b/c apart from syntax/command knowledge there is a need to "decompile" a problem being solved by author, whereas when writing code that problem is known.
 
@@ -175,7 +175,7 @@ Overall, task types can be:
 
 - Fix the command.
 
-# usage of terminal
+# Usage of terminal
 
 Though terminal usage is crucial, it is not mandatory (except deliberately terminal tasks). If a user knows the solution, they may enter it without resorting to terminal. Terminal is a means to experiment and to work out the solution.
 
